@@ -4,3 +4,8 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+roosty_downloader_api = { path = "../roosty_downloader_api" }
+tokio = { version = "1.45.1", features = ["macros", "rt-multi-thread", "fs", "process"] }
+anyhow = "1.0.98"
+reqwest = "0.12.19"
+url = "2.5.4"
