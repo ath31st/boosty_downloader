@@ -1,7 +1,7 @@
 use crate::{cli, file_handler};
 use anyhow::{Context, Result};
-use roosty_downloader_api::api_response::Post;
-use roosty_downloader_api::post_data_extractor::ContentItem;
+use boosty_downloader_api::api_response::Post;
+use boosty_downloader_api::post_data_extractor::ContentItem;
 use std::path::PathBuf;
 
 pub enum PostsResult {

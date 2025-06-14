@@ -7,7 +7,7 @@ mod post_handler;
 
 use crate::menu_handler::handle_menu;
 use anyhow::Result;
-use roosty_downloader_api::api_client::ApiClient;
+use boosty_downloader_api::api_client::ApiClient;
 
 const API_URL: &str = "https://api.boosty.to";
 const POSTS_LIMIT: i32 = 2;

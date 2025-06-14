@@ -1,5 +1,5 @@
 use anyhow::Context;
-use roosty_downloader_api::api_client::ApiClient;
+use boosty_downloader_api::api_client::ApiClient;
 use std::process::Command;
 use std::time::Duration;
 use tokio::time::timeout;

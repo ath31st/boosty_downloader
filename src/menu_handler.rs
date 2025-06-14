@@ -1,7 +1,7 @@
 use crate::post_handler;
 use crate::{cli, parser};
 use anyhow::{Context, Result};
-use roosty_downloader_api::api_client::ApiClient;
+use boosty_downloader_api::api_client::ApiClient;
 
 pub async fn handle_menu(client: &mut ApiClient, posts_limit: i32) -> Result<bool> {
     cli::show_menu();
