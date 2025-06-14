@@ -45,55 +45,6 @@ pub async fn ensure_post_folder(blog_name: &str, post_id: &str) -> Result<PathBu
     Ok(post_path)
 }
 
-// pub async fn download_video_content1(
-//     folder_path: &PathBuf,
-//     video_url: &str,
-//     video_title: &str,
-// ) -> Result<DownloadResult> {
-//     let output_path = folder_path.join(format!("{}.mp4", video_title));
-//
-//     if fs::try_exists(&output_path).await.unwrap_or(false) {
-//         return Ok(DownloadResult::Skipped);
-//     }
-//
-//     let status = Command::new("ffmpeg")
-//         .arg("-i")
-//         .arg(video_url)
-//         .arg("-c")
-//         .arg("copy")
-//         .arg(output_path.to_string_lossy().to_string())
-//         .status()
-//         .await?;
-//
-//     if status.success() {
-//         Ok(DownloadResult::Success)
-//     } else {
-//         Ok(DownloadResult::Error("ffmpeg failed".into()))
-//     }
-// }
-//
-// pub async fn download_image_content1(
-//     post_folder: &Path,
-//     image_url: &str,
-//     image_name: &str,
-// ) -> Result<DownloadResult> {
-//     let output_path = post_folder.join(format!("{}.jpg", image_name));
-//
-//     if fs::try_exists(&output_path).await.unwrap_or(false) {
-//         return Ok(DownloadResult::Skipped);
-//     }
-//
-//     let resp = reqwest::get(image_url).await?;
-//     if !resp.status().is_success() {
-//         return Ok(DownloadResult::Error(format!("HTTP {}", resp.status())));
-//     }
-//
-//     let bytes = resp.bytes().await?;
-//     fs::write(&output_path, &bytes).await?;
-//
-//     Ok(DownloadResult::Success)
-// }
-
 pub async fn download_image_content(
     post_folder: &Path,
     image_url: &str,
@@ -219,13 +170,18 @@ pub async fn download_video_content(
 }
 
 fn sanitize_filename(name: &str) -> String {
-    name.chars()
-        .map(|c| {
-            if c.is_ascii_alphanumeric() || c == '_' || c == '-' || c == ' ' {
-                c
-            } else {
-                '_'
-            }
+    let mut s: String = name
+        .chars()
+        .map(|c| match c {
+            '/' | '\\' | '\0' => '_',
+            c if c.is_control() => '_',
+            other => other,
         })
-        .collect()
+        .collect();
+
+    while s.ends_with('.') || s.ends_with(' ') {
+        s.pop();
+    }
+
+    if s.is_empty() { "_".to_string() } else { s }
 }
