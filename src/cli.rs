@@ -77,5 +77,5 @@ pub fn post_not_available_or_without_content(post_title: &str) {
 }
 
 pub fn print_error(msg: &str) {
-    eprintln!("Error: {}", msg);
+    eprintln!("\x1b[31mError:\x1b[0m {}", msg);
 }
