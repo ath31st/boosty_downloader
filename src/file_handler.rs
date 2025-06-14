@@ -1,4 +1,4 @@
-use anyhow::Result;
+use anyhow::{Context, Result};
 use futures_util::StreamExt;
 use indicatif::{ProgressBar, ProgressStyle};
 use std::path::{Path, PathBuf};
@@ -17,8 +17,13 @@ pub enum DownloadResult {
 
 pub async fn ensure_blog_folder(blog_name: &str) -> Result<PathBuf> {
     let blog_path = Path::new(blog_name);
-    if !fs::try_exists(blog_path).await.unwrap_or(false) {
-        fs::create_dir_all(blog_path).await?;
+    let exists = fs::try_exists(blog_path)
+        .await
+        .with_context(|| format!("Failed to check if blog folder '{}' exists", blog_name))?;
+    if !exists {
+        fs::create_dir_all(blog_path)
+            .await
+            .with_context(|| format!("Failed to create blog folder '{}'", blog_name))?;
     }
     Ok(blog_path.to_path_buf())
 }
@@ -26,8 +31,16 @@ pub async fn ensure_blog_folder(blog_name: &str) -> Result<PathBuf> {
 pub async fn ensure_post_folder(blog_name: &str, post_id: &str) -> Result<PathBuf> {
     let blog_path = ensure_blog_folder(blog_name).await?;
     let post_path = blog_path.join(post_id);
-    if !fs::try_exists(&post_path).await.unwrap_or(false) {
-        fs::create_dir_all(&post_path).await?;
+    let exists = fs::try_exists(&post_path).await.with_context(|| {
+        format!(
+            "Failed to check if post folder '{}' exists",
+            post_path.display()
+        )
+    })?;
+    if !exists {
+        fs::create_dir_all(&post_path)
+            .await
+            .with_context(|| format!("Failed to create post folder '{}'", post_path.display()))?;
     }
     Ok(post_path)
 }
@@ -89,12 +102,22 @@ pub async fn download_image_content(
     let safe_name = sanitize_filename(image_name);
     let output_path = post_folder.join(format!("{}.jpg", safe_name));
 
-    if fs::try_exists(&output_path).await.unwrap_or(false) {
+    let exists = fs::try_exists(&output_path).await.with_context(|| {
+        format!(
+            "Failed to check existence of image file '{}'",
+            output_path.display()
+        )
+    })?;
+    if exists {
         return Ok(DownloadResult::Skipped);
     }
 
     let client = reqwest::Client::new();
-    let resp = client.get(image_url).send().await?;
+    let resp = client
+        .get(image_url)
+        .send()
+        .await
+        .with_context(|| format!("HTTP GET failed for image URL '{}'", image_url))?;
     if !resp.status().is_success() {
         return Ok(DownloadResult::Error(format!("HTTP {}", resp.status())));
     }
@@ -119,11 +142,14 @@ pub async fn download_image_content(
         pb
     };
 
-    let mut file = fs::File::create(&output_path).await?;
+    let mut file = fs::File::create(&output_path)
+        .await
+        .with_context(|| format!("Failed to create file '{}'", output_path.display()))?;
     let mut stream = resp.bytes_stream();
 
     while let Some(chunk) = stream.next().await {
-        let chunk = chunk?;
+        let chunk =
+            chunk.with_context(|| format!("Error while reading chunk from '{}'", image_url))?;
         file.write_all(&chunk).await?;
         pb.inc(chunk.len() as u64);
     }
@@ -140,7 +166,13 @@ pub async fn download_video_content(
     let safe_name = sanitize_filename(video_title);
     let output_path = folder_path.join(format!("{}.mp4", safe_name));
 
-    if fs::try_exists(&output_path).await.unwrap_or(false) {
+    let exists = fs::try_exists(&output_path).await.with_context(|| {
+        format!(
+            "Failed to check existence of video file '{}'",
+            output_path.display()
+        )
+    })?;
+    if exists {
         return Ok(DownloadResult::Skipped);
     }
 
@@ -160,11 +192,15 @@ pub async fn download_video_content(
         .arg(output_path.to_string_lossy().to_string())
         .stdout(Stdio::null())
         .stderr(Stdio::null())
-        .spawn()?;
+        .spawn()
+        .with_context(|| format!("Failed to spawn ffmpeg for URL '{}'", video_url))?;
 
     let start = Instant::now();
     loop {
-        match child.try_wait()? {
+        match child
+            .try_wait()
+            .with_context(|| "Error while waiting for ffmpeg process")?
+        {
             Some(status) => {
                 pb.finish_and_clear();
                 return if status.success() {
