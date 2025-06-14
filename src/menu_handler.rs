@@ -1,6 +1,6 @@
 use crate::post_handler;
 use crate::{cli, parser};
-use anyhow::Result;
+use anyhow::{Context, Result};
 use roosty_downloader_api::api_client::ApiClient;
 
 pub async fn handle_menu(client: &mut ApiClient, posts_limit: i32) -> Result<bool> {
@@ -10,26 +10,9 @@ pub async fn handle_menu(client: &mut ApiClient, posts_limit: i32) -> Result<boo
     match selected_menu {
         1 => {
             let input = cli::read_user_input(cli::ENTER_PATH);
-
-            match parser::parse_boosty_url(&input) {
-                Ok(parsed) => {
-                    let result = match parsed {
-                        parser::BoostyUrl::Blog(blog) => {
-                            let multiple = client.fetch_posts(&blog, posts_limit).await?;
-                            post_handler::PostsResult::Multiple(multiple)
-                        }
-                        parser::BoostyUrl::Post { blog, post_id } => {
-                            let single = client.fetch_post(&blog, &post_id).await?;
-                            post_handler::PostsResult::Single(single)
-                        }
-                    };
-
-                    post_handler::post_processor(result).await?
-                }
-                Err(e) => {
-                    cli::print_error(&format!("Invalid Boosty URL: {}", e));
-                }
-            }
+            if let Err(e) = process_boosty_url(client, posts_limit, &input).await {
+                cli::print_error(&format!("{}", e))
+            };
         }
         2 => {
             let entered_token = cli::read_user_input(cli::ENTER_TOKEN);
@@ -43,4 +26,35 @@ pub async fn handle_menu(client: &mut ApiClient, posts_limit: i32) -> Result<boo
         _ => cli::show_menu(),
     }
     Ok(true)
+}
+
+async fn process_boosty_url(
+    client: &mut ApiClient,
+    posts_limit: i32,
+    input: &str,
+) -> Result<()> {
+    let parsed = parser::parse_boosty_url(input)
+        .with_context(|| format!("Failed to parse Boosty URL '{}'", input))?;
+
+    let result = match parsed {
+        parser::BoostyUrl::Blog(blog) => {
+            let multiple = client
+                .fetch_posts(&blog, posts_limit)
+                .await
+                .with_context(|| format!("Failed to fetch posts for blog '{}'", blog))?;
+            post_handler::PostsResult::Multiple(multiple)
+        }
+        parser::BoostyUrl::Post { blog, post_id } => {
+            let single = client.fetch_post(&blog, &post_id).await.with_context(|| {
+                format!("Failed to fetch post '{}' for blog '{}'", post_id, blog)
+            })?;
+            post_handler::PostsResult::Single(single)
+        }
+    };
+
+    post_handler::post_processor(result)
+        .await
+        .with_context(|| format!("Error while processing post content: {}", input))?;
+
+    Ok(())
 }

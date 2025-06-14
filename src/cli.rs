@@ -50,10 +50,6 @@ pub fn exit_message() {
     println!("Exiting...");
 }
 
-pub fn wrong_content_url(content_url: &str) {
-    println!("Wrong content url: {}", content_url);
-}
-
 pub fn show_download_result(result: DownloadResult, video_title: &str, post_title: &str) {
     match result {
         DownloadResult::Skipped => {
@@ -78,4 +74,8 @@ pub fn show_api_client_headers(headers: &HashMap<String, String>) {
 
 pub fn post_not_available_or_without_content(post_title: &str) {
     println!("Post '{}' not available or has no content", post_title);
+}
+
+pub fn print_error(msg: &str) {
+    eprintln!("Error: {}", msg);
 }
