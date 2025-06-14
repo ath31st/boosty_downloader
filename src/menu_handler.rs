@@ -3,7 +3,7 @@ use crate::{cli, parser};
 use anyhow::Result;
 use roosty_downloader_api::api_client::ApiClient;
 
-pub async fn handle_menu(client: &mut ApiClient) -> Result<bool> {
+pub async fn handle_menu(client: &mut ApiClient, posts_limit: i32) -> Result<bool> {
     cli::show_menu();
     let selected_menu = cli::read_input_menu();
 
@@ -11,21 +11,24 @@ pub async fn handle_menu(client: &mut ApiClient) -> Result<bool> {
         1 => {
             let input = cli::read_user_input(cli::ENTER_PATH);
 
-            if let Some(parsed) = parser::parse_boosty_url(&input) {
-                let result = match parsed {
-                    parser::BoostyUrl::Blog(blog) => {
-                        let multiple = client.fetch_posts(&blog, 4).await?;
-                        post_handler::PostsResult::Multiple(multiple)
-                    }
-                    parser::BoostyUrl::Post { blog, post_id } => {
-                        let single = client.fetch_post(&blog, &post_id).await?;
-                        post_handler::PostsResult::Single(single)
-                    }
-                };
+            match parser::parse_boosty_url(&input) {
+                Ok(parsed) => {
+                    let result = match parsed {
+                        parser::BoostyUrl::Blog(blog) => {
+                            let multiple = client.fetch_posts(&blog, posts_limit).await?;
+                            post_handler::PostsResult::Multiple(multiple)
+                        }
+                        parser::BoostyUrl::Post { blog, post_id } => {
+                            let single = client.fetch_post(&blog, &post_id).await?;
+                            post_handler::PostsResult::Single(single)
+                        }
+                    };
 
-                post_handler::post_processor(result).await?
-            } else {
-                cli::wrong_content_url(&input);
+                    post_handler::post_processor(result).await?
+                }
+                Err(e) => {
+                    cli::print_error(&format!("Invalid Boosty URL: {}", e));
+                }
             }
         }
         2 => {
