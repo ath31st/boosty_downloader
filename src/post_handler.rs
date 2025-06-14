@@ -56,7 +56,8 @@ async fn process(post: &Post) -> Result<()> {
 fn check_available_post(post: &Post) -> bool {
     if !post.has_access || post.data.is_empty() {
         cli::post_not_available_or_without_content(&post.title);
-        false;
+        false
+    } else {
+        true
     }
-    true
 }
