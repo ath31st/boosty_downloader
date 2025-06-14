@@ -11,7 +11,7 @@ pub async fn handle_menu(client: &mut ApiClient, posts_limit: i32) -> Result<boo
         1 => {
             let input = cli::read_user_input(cli::ENTER_PATH);
             if let Err(e) = process_boosty_url(client, posts_limit, &input).await {
-                cli::print_error(&format!("{}", e))
+                cli::print_error(&e)
             };
         }
         2 => {
@@ -28,11 +28,7 @@ pub async fn handle_menu(client: &mut ApiClient, posts_limit: i32) -> Result<boo
     Ok(true)
 }
 
-async fn process_boosty_url(
-    client: &mut ApiClient,
-    posts_limit: i32,
-    input: &str,
-) -> Result<()> {
+async fn process_boosty_url(client: &mut ApiClient, posts_limit: i32, input: &str) -> Result<()> {
     let parsed = parser::parse_boosty_url(input)
         .with_context(|| format!("Failed to parse Boosty URL '{}'", input))?;
 

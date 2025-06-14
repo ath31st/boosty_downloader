@@ -15,13 +15,7 @@ const POSTS_LIMIT: i32 = 2;
 #[tokio::main]
 async fn main() {
     if let Err(e) = run().await {
-        cli::print_error(&format!("{}", e));
-        #[cfg(debug_assertions)]
-        {
-            for cause in e.chain().skip(1) {
-                cli::print_error(&format!("Caused by: {}", cause));
-            }
-        }
+        cli::print_error(&e);
         std::process::exit(1);
     }
 }

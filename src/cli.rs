@@ -1,5 +1,6 @@
 use crate::file_handler::DownloadResult;
 use std::collections::HashMap;
+use anyhow::Error;
 
 pub const ENTER_PATH: &str = "Enter path to post or posts:";
 pub const ENTER_TOKEN: &str = "Enter access token:";
@@ -80,6 +81,12 @@ pub fn post_not_available_or_without_content(post_title: &str) {
     println!("Post '{}' not available or has no content", post_title);
 }
 
-pub fn print_error(msg: &str) {
-    eprintln!("\x1b[31mError:\x1b[0m {}", msg);
+pub fn print_error(e: &Error) {
+    if cfg!(debug_assertions) {
+        for cause in e.chain() {
+            eprintln!("\x1b[31mError:\x1b[0m {}", cause);
+        }
+    } else {
+        eprintln!("\x1b[31mError:\x1b[0m {}", e);
+    }
 }
