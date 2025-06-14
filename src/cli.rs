@@ -64,6 +64,10 @@ pub fn show_download_result(result: DownloadResult, video_title: &str, post_titl
     }
 }
 
+pub fn unknown_content_item() {
+    println!("\x1b[34mInfo:\x1b[0m Post item with unknown content");
+}
+
 pub fn show_api_client_headers(headers: &HashMap<String, String>) {
     println!("Current API client headers:");
     for (key, value) in headers {

@@ -77,6 +77,7 @@ async fn process(post: &Post) -> Result<()> {
                         })?;
                 cli::show_download_result(download_res, &video_title, &post_title);
             }
+            ContentItem::Unknown => cli::unknown_content_item(),
         }
     }
     Ok(())
