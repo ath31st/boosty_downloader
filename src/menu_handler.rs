@@ -15,11 +15,16 @@ pub async fn handle_menu(client: &mut ApiClient, posts_limit: i32) -> Result<boo
             };
         }
         2 => {
-            let entered_token = cli::read_user_input(cli::ENTER_TOKEN);
-            client.set_bearer_token(&entered_token);
+            let entered_token = cli::read_user_input(cli::ENTER_ACCESS_TOKEN);
+            client.set_bearer_token(&entered_token)?;
             cli::show_api_client_headers(&client.headers_as_map());
         }
         3 => {
+            let entered_token = cli::read_user_input(cli::ENTER_REFRESH_TOKEN);
+            let entered_device_id = cli::read_user_input(cli::ENTER_CLIENT_ID);
+            client.set_refresh_token_and_device_id(&entered_token, &entered_device_id)?;
+        }
+        4 => {
             cli::exit_message();
             return Ok(false);
         }

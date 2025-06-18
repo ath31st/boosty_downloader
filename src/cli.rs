@@ -3,12 +3,15 @@ use std::collections::HashMap;
 use anyhow::Error;
 
 pub const ENTER_PATH: &str = "Enter path to post or posts:";
-pub const ENTER_TOKEN: &str = "Enter access token:";
+pub const ENTER_ACCESS_TOKEN: &str = "Enter access token:";
+pub const ENTER_REFRESH_TOKEN: &str = "Enter refresh token:";
+pub const ENTER_CLIENT_ID: &str = "Enter client id:";
 
 pub fn show_menu() {
     println!("1. Download content");
     println!("2. Enter access token (optional)");
-    println!("3. Exit");
+    println!("3. Enter refresh token and client id (optional)");
+    println!("4. Exit");
 }
 
 pub fn read_input_menu() -> i8 {
@@ -22,8 +25,8 @@ pub fn read_input_menu() -> i8 {
         }
 
         match input.trim().parse::<i8>() {
-            Ok(num) if (1..=3).contains(&num) => return num,
-            _ => println!("Please enter a valid number between 1 and 3"),
+            Ok(num) if (1..=4).contains(&num) => return num,
+            _ => println!("Please enter a valid number between 1 and 4"),
         }
     }
 }
