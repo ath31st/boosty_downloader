@@ -3,7 +3,7 @@ use crate::{cli, parser};
 use anyhow::{Context, Result};
 use boosty_downloader_api::api_client::ApiClient;
 
-pub async fn handle_menu(client: &mut ApiClient, posts_limit: i32) -> Result<bool> {
+pub async fn handle_menu(client: &ApiClient, posts_limit: i32) -> Result<bool> {
     cli::show_menu();
     let selected_menu = cli::read_input_menu();
 
@@ -16,13 +16,15 @@ pub async fn handle_menu(client: &mut ApiClient, posts_limit: i32) -> Result<boo
         }
         2 => {
             let entered_token = cli::read_user_input(cli::ENTER_ACCESS_TOKEN);
-            client.set_bearer_token(&entered_token)?;
+            client.set_bearer_token(&entered_token).await?;
             cli::show_api_client_headers(&client.headers_as_map());
         }
         3 => {
             let entered_token = cli::read_user_input(cli::ENTER_REFRESH_TOKEN);
             let entered_device_id = cli::read_user_input(cli::ENTER_CLIENT_ID);
-            client.set_refresh_token_and_device_id(&entered_token, &entered_device_id)?;
+            client
+                .set_refresh_token_and_device_id(&entered_token, &entered_device_id)
+                .await?;
         }
         4 => {
             cli::exit_message();
@@ -33,7 +35,7 @@ pub async fn handle_menu(client: &mut ApiClient, posts_limit: i32) -> Result<boo
     Ok(true)
 }
 
-async fn process_boosty_url(client: &mut ApiClient, posts_limit: i32, input: &str) -> Result<()> {
+async fn process_boosty_url(client: &ApiClient, posts_limit: i32, input: &str) -> Result<()> {
     let parsed = parser::parse_boosty_url(input)
         .with_context(|| format!("Failed to parse Boosty URL '{}'", input))?;
 

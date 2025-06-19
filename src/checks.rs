@@ -18,7 +18,7 @@ pub fn check_ffmpeg() -> anyhow::Result<()> {
     }
 }
 
-pub async fn check_api(client: &mut ApiClient) -> anyhow::Result<()> {
+pub async fn check_api(client: &ApiClient) -> anyhow::Result<()> {
     let fake_blog = "nonexistent";
     let fut = client.fetch_posts(fake_blog, 1);
     match timeout(Duration::from_secs(5), fut).await {
