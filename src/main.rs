@@ -7,7 +7,7 @@ mod post_handler;
 
 use crate::menu_handler::handle_menu;
 use anyhow::Result;
-use boosty_downloader_api::api_client::ApiClient;
+use boosty_api::api_client::ApiClient;
 use reqwest::Client;
 use std::time::Duration;
 
