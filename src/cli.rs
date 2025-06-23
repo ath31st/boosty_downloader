@@ -54,16 +54,16 @@ pub fn exit_message() {
     println!("Exiting...");
 }
 
-pub fn show_download_result(result: DownloadResult, video_title: &str, post_title: &str) {
+pub fn show_download_result(result: DownloadResult, file_name: &str, post_title: &str) {
     match result {
         DownloadResult::Skipped => {
-            println!("File '{}' skipped", video_title);
+            println!("File '{}' skipped", file_name);
         }
         DownloadResult::Error(error) => {
             println!("Error: {}", error);
         }
         DownloadResult::Success => {
-            println!("File '{}' downloaded for post {}", video_title, post_title);
+            println!("File '{}' downloaded for post {}", file_name, post_title);
         }
     }
 }
