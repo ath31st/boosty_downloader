@@ -1,4 +1,5 @@
 use anyhow::{Context, Result};
+use serde_json::Value;
 use url::Url;
 
 pub enum BoostyUrl {
@@ -31,4 +32,34 @@ pub fn parse_boosty_url(url_str: &str) -> Result<BoostyUrl> {
         }),
         _ => anyhow::bail!("URL does not match expected Boosty format"),
     }
+}
+
+pub fn parse_text_content(content: &str, modificator: &str) -> Option<String> {
+    if modificator == "BLOCK_END" {
+        return Some("\n".to_string());
+    }
+
+    let parsed: Vec<Value> = serde_json::from_str(content)
+        .with_context(|| format!("Failed to parse text content JSON: {}", content))
+        .ok()?;
+    let text = parsed.get(0)?.as_str()?;
+
+    if text.is_empty() {
+        return None;
+    }
+
+    Some(text.to_string())
+}
+
+pub fn parse_link_content(content: &str, url: &str) -> Option<String> {
+    let parsed: Vec<Value> = serde_json::from_str(content)
+        .with_context(|| format!("Failed to parse link content JSON: {}", content))
+        .ok()?;
+    let text = parsed.get(0)?.as_str()?;
+
+    if text.is_empty() {
+        return None;
+    }
+
+    Some(format!("{} ({})", text, url))
 }
