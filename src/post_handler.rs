@@ -83,16 +83,28 @@ async fn process(post: &Post) -> Result<()> {
             } => {
                 if let Some(parsed) = parser::parse_text_content(&content, &modificator) {
                     let download_res =
-                        file_handler::download_text_content(&post_folder, &post_title, &parsed)
-                            .await?;
+                        file_handler::download_text_content(&post_folder, post_title, &parsed)
+                            .await
+                            .with_context(|| {
+                                format!(
+                                    "Failed to download text '{}' for post '{}'",
+                                    content, post_title
+                                )
+                            })?;
                     cli::show_download_result(download_res, post_title, post_title);
                 }
             }
             ContentItem::Link { content, url, .. } => {
                 if let Some(parsed) = parser::parse_link_content(&content, &url) {
                     let download_res =
-                        file_handler::download_text_content(&post_folder, &post_title, &parsed)
-                            .await?;
+                        file_handler::download_text_content(&post_folder, post_title, &parsed)
+                            .await
+                            .with_context(|| {
+                                format!(
+                                    "Failed to download link '{}' for post '{}'",
+                                    url, post_title
+                                )
+                            })?;
                     cli::show_download_result(download_res, post_title, post_title);
                 }
             }
