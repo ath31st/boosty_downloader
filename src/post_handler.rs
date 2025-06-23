@@ -57,7 +57,19 @@ async fn process(post: &Post) -> Result<()> {
                     })?;
                 cli::show_download_result(download_res, &id, post_title);
             }
-            ContentItem::Video { url, video_title } => {
+            ContentItem::Video { url } => {
+                let download_res =
+                    file_handler::download_text_content(&post_folder, post_title, &url)
+                        .await
+                        .with_context(|| {
+                            format!(
+                                "Failed to download video url '{}' for post '{}'",
+                                url, post_title
+                            )
+                        })?;
+                cli::show_download_result(download_res, post_title, post_title);
+            }
+            ContentItem::OkVideo { url, video_title } => {
                 let download_res =
                     file_handler::download_video_content(&post_folder, &url, &video_title)
                         .await
