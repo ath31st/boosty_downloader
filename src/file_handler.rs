@@ -169,6 +169,29 @@ pub async fn download_video_content(
     }
 }
 
+pub async fn download_text_content(
+    folder_path: &Path,
+    post_title: &str,
+    content: &str,
+) -> Result<DownloadResult> {
+    let safe_name = sanitize_filename(post_title);
+    let output_path = folder_path.join(format!("{}.md", safe_name));
+
+    let mut file = fs::OpenOptions::new()
+        .create(true)
+        .append(true)
+        .write(true)
+        .open(&output_path)
+        .await
+        .with_context(|| format!("Failed to open file '{}'", output_path.display()))?;
+
+    file.write_all(content.as_bytes())
+        .await
+        .with_context(|| format!("Failed to write to file '{}'", output_path.display()))?;
+
+    Ok(DownloadResult::Success)
+}
+
 fn sanitize_filename(name: &str) -> String {
     let mut s: String = name
         .chars()
