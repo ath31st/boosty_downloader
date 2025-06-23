@@ -1,5 +1,5 @@
 [package]
-name = "boosty_downloader_cli"
+name = "boosty_downloader"
 version = "0.1.0"
 edition = "2024"
 
@@ -11,3 +11,4 @@ reqwest = { version = "0.12.19", features = ["stream"] }
 url = "2.5.4"
 indicatif = "0.17.11"
 futures-util = "0.3.31"
+serde_json = "1.0.140"

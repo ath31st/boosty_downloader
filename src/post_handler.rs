@@ -1,4 +1,4 @@
-use crate::{cli, file_handler};
+use crate::{cli, file_handler, parser};
 use anyhow::{Context, Result};
 use boosty_api::api_response::Post;
 use boosty_api::post_data_extractor::ContentItem;
@@ -76,6 +76,25 @@ async fn process(post: &Post) -> Result<()> {
                             )
                         })?;
                 cli::show_download_result(download_res, &video_title, &post_title);
+            }
+            ContentItem::Text {
+                modificator,
+                content,
+            } => {
+                if let Some(parsed) = parser::parse_text_content(&content, &modificator) {
+                    let download_res =
+                        file_handler::download_text_content(&post_folder, &post_title, &parsed)
+                            .await?;
+                    cli::show_download_result(download_res, post_title, post_title);
+                }
+            }
+            ContentItem::Link { content, url, .. } => {
+                if let Some(parsed) = parser::parse_link_content(&content, &url) {
+                    let download_res =
+                        file_handler::download_text_content(&post_folder, &post_title, &parsed)
+                            .await?;
+                    cli::show_download_result(download_res, post_title, post_title);
+                }
             }
             ContentItem::Unknown => cli::unknown_content_item(),
         }
