@@ -192,6 +192,72 @@ pub async fn download_text_content(
     Ok(DownloadResult::Success)
 }
 
+pub async fn download_audio_content(
+    post_folder: &Path,
+    audio_url: &str,
+    audio_title: &str,
+    file_type: &str,
+) -> Result<DownloadResult> {
+    let safe_name = sanitize_filename(audio_title);
+    let output_path = post_folder.join(format!("{}.{}", safe_name, file_type.to_lowercase()));
+
+    let exists = fs::try_exists(&output_path).await.with_context(|| {
+        format!(
+            "Failed to check existence of audio file '{}'",
+            output_path.display()
+        )
+    })?;
+    if exists {
+        return Ok(DownloadResult::Skipped);
+    }
+
+    let client = reqwest::Client::new();
+    let resp = client
+        .get(audio_url)
+        .send()
+        .await
+        .with_context(|| format!("HTTP GET failed for audio URL '{}'", audio_url))?;
+    if !resp.status().is_success() {
+        let error_body = resp.text().await.unwrap_or_default();
+        return Ok(DownloadResult::Error(format!("HTTP {}", error_body)));
+    }
+
+    let total_size = resp.content_length().unwrap_or(0);
+
+    let pb = if total_size > 0 {
+        let pb = ProgressBar::new(total_size);
+        pb.set_style(
+            ProgressStyle::with_template(
+                "{spinner:.green} [{bar:40.cyan/blue}] {bytes}/{total_bytes} ({eta})",
+            )?
+            .progress_chars("=> "),
+        );
+        pb
+    } else {
+        let pb = ProgressBar::new_spinner();
+        pb.set_style(ProgressStyle::with_template(
+            "{spinner:.green} Downloading audio... {bytes}",
+        )?);
+        pb.enable_steady_tick(Duration::from_millis(100));
+        pb
+    };
+
+    let mut file = fs::File::create(&output_path)
+        .await
+        .with_context(|| format!("Failed to create file '{}'", output_path.display()))?;
+    let mut stream = resp.bytes_stream();
+
+    while let Some(chunk) = stream.next().await {
+        let chunk =
+            chunk.with_context(|| format!("Error while reading chunk from '{}'", audio_url))?;
+        file.write_all(&chunk).await?;
+        pb.inc(chunk.len() as u64);
+    }
+    pb.finish_and_clear();
+
+    Ok(DownloadResult::Success)
+}
+
 fn sanitize_filename(name: &str) -> String {
     let mut s: String = name
         .chars()

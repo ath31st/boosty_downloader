@@ -46,11 +46,7 @@ async fn process(post: &Post) -> Result<()> {
 
     for item in items {
         match item {
-            ContentItem::Image {
-                post_title: _,
-                url,
-                id,
-            } => {
+            ContentItem::Image { url, id } => {
                 let download_res = file_handler::download_image_content(&post_folder, &url, &id)
                     .await
                     .with_context(|| {
@@ -61,11 +57,7 @@ async fn process(post: &Post) -> Result<()> {
                     })?;
                 cli::show_download_result(download_res, &id, post_title);
             }
-            ContentItem::Video {
-                post_title,
-                url,
-                video_title,
-            } => {
+            ContentItem::Video { url, video_title } => {
                 let download_res =
                     file_handler::download_video_content(&post_folder, &url, &video_title)
                         .await
@@ -76,6 +68,26 @@ async fn process(post: &Post) -> Result<()> {
                             )
                         })?;
                 cli::show_download_result(download_res, &video_title, &post_title);
+            }
+            ContentItem::Audio {
+                url,
+                audio_title,
+                file_type,
+            } => {
+                let download_res = file_handler::download_audio_content(
+                    &post_folder,
+                    &url,
+                    &audio_title,
+                    &file_type,
+                )
+                .await
+                .with_context(|| {
+                    format!(
+                        "Failed to download audio '{}' for post '{}'",
+                        audio_title, post_title
+                    )
+                })?;
+                cli::show_download_result(download_res, &audio_title, &post_title);
             }
             ContentItem::Text {
                 modificator,
