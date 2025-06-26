@@ -192,14 +192,14 @@ pub async fn download_text_content(
     Ok(DownloadResult::Success)
 }
 
-pub async fn download_audio_content(
+pub async fn download_file_content(
     post_folder: &Path,
-    audio_url: &str,
-    audio_title: &str,
-    file_type: &str,
+    url: &str,
+    title: &str,
+    signed_query: &str,
 ) -> Result<DownloadResult> {
-    let safe_name = sanitize_filename(audio_title);
-    let output_path = post_folder.join(format!("{}.{}", safe_name, file_type.to_lowercase()));
+    let safe_name = sanitize_filename(title);
+    let output_path = post_folder.join(safe_name);
 
     let exists = fs::try_exists(&output_path).await.with_context(|| {
         format!(
@@ -210,13 +210,20 @@ pub async fn download_audio_content(
     if exists {
         return Ok(DownloadResult::Skipped);
     }
+    if signed_query.is_empty() {
+        return Ok(DownloadResult::Error(format!(
+            "Authorization required: to download file '{}' an access token must be provided",
+            title
+        )));
+    }
 
+    let full_url = format!("{}{}", url, signed_query);
     let client = reqwest::Client::new();
     let resp = client
-        .get(audio_url)
+        .get(full_url)
         .send()
         .await
-        .with_context(|| format!("HTTP GET failed for audio URL '{}'", audio_url))?;
+        .with_context(|| format!("HTTP GET failed for file URL '{}'", url))?;
     if !resp.status().is_success() {
         let error_body = resp.text().await.unwrap_or_default();
         return Ok(DownloadResult::Error(format!("HTTP {}", error_body)));
@@ -236,7 +243,7 @@ pub async fn download_audio_content(
     } else {
         let pb = ProgressBar::new_spinner();
         pb.set_style(ProgressStyle::with_template(
-            "{spinner:.green} Downloading audio... {bytes}",
+            "{spinner:.green} Downloading file... {bytes}",
         )?);
         pb.enable_steady_tick(Duration::from_millis(100));
         pb
@@ -248,8 +255,7 @@ pub async fn download_audio_content(
     let mut stream = resp.bytes_stream();
 
     while let Some(chunk) = stream.next().await {
-        let chunk =
-            chunk.with_context(|| format!("Error while reading chunk from '{}'", audio_url))?;
+        let chunk = chunk.with_context(|| format!("Error while reading chunk from '{}'", url))?;
         file.write_all(&chunk).await?;
         pb.inc(chunk.len() as u64);
     }
