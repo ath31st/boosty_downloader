@@ -132,6 +132,7 @@ async fn process(post: &Post) -> Result<()> {
                     cli::show_download_result(download_res, post_title, post_title);
                 }
             }
+            ContentItem::File { url: _, title: _, size: _ } => cli::unknown_content_item(),
             ContentItem::Unknown => cli::unknown_content_item(),
         }
     }
