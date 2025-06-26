@@ -69,37 +69,32 @@ async fn process(post: &Post) -> Result<()> {
                         })?;
                 cli::show_download_result(download_res, post_title, post_title);
             }
-            ContentItem::OkVideo { url, video_title } => {
-                let download_res =
-                    file_handler::download_video_content(&post_folder, &url, &video_title)
-                        .await
-                        .with_context(|| {
-                            format!(
-                                "Failed to download video '{}' for post '{}'",
-                                video_title, post_title
-                            )
-                        })?;
-                cli::show_download_result(download_res, &video_title, &post_title);
+            ContentItem::OkVideo { url, title } => {
+                let download_res = file_handler::download_video_content(&post_folder, &url, &title)
+                    .await
+                    .with_context(|| {
+                        format!(
+                            "Failed to download video '{}' for post '{}'",
+                            title, post_title
+                        )
+                    })?;
+                cli::show_download_result(download_res, &title, &post_title);
             }
-            ContentItem::Audio {
-                url,
-                audio_title,
-                file_type,
-            } => {
-                let download_res = file_handler::download_audio_content(
+            ContentItem::Audio { url, title, .. } | ContentItem::File { url, title, .. } => {
+                let download_res = file_handler::download_file_content(
                     &post_folder,
                     &url,
-                    &audio_title,
-                    &file_type,
+                    &title,
+                    &post.signed_query,
                 )
                 .await
                 .with_context(|| {
                     format!(
-                        "Failed to download audio '{}' for post '{}'",
-                        audio_title, post_title
+                        "Failed to download file '{}' for post '{}'",
+                        title, post_title
                     )
                 })?;
-                cli::show_download_result(download_res, &audio_title, &post_title);
+                cli::show_download_result(download_res, &title, &post_title);
             }
             ContentItem::Text {
                 modificator,
@@ -132,7 +127,6 @@ async fn process(post: &Post) -> Result<()> {
                     cli::show_download_result(download_res, post_title, post_title);
                 }
             }
-            ContentItem::File { url: _, title: _, size: _ } => cli::unknown_content_item(),
             ContentItem::Unknown => cli::unknown_content_item(),
         }
     }
