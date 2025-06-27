@@ -47,14 +47,16 @@ async fn process(post: &Post) -> Result<()> {
     for item in items {
         match item {
             ContentItem::Image { url, id } => {
-                let download_res = file_handler::download_image_content(&post_folder, &url, &id)
-                    .await
-                    .with_context(|| {
-                        format!(
-                            "Failed to download image '{}' for post '{}'",
-                            id, post_title
-                        )
-                    })?;
+                let image_name = format!("{}.jpg", id);
+                let download_res =
+                    file_handler::download_file_content(&post_folder, &url, &image_name, None)
+                        .await
+                        .with_context(|| {
+                            format!(
+                                "Failed to download image '{}' for post '{}'",
+                                id, post_title
+                            )
+                        })?;
                 cli::show_download_result(download_res, &id, post_title);
             }
             ContentItem::Video { url } => {
@@ -85,7 +87,7 @@ async fn process(post: &Post) -> Result<()> {
                     &post_folder,
                     &url,
                     &title,
-                    &post.signed_query,
+                    Some(&post.signed_query),
                 )
                 .await
                 .with_context(|| {

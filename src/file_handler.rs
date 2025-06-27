@@ -15,7 +15,7 @@ pub enum DownloadResult {
     Skipped,
 }
 
-pub async fn ensure_blog_folder(blog_name: &str) -> Result<PathBuf> {
+async fn ensure_blog_folder(blog_name: &str) -> Result<PathBuf> {
     let blog_path = Path::new(blog_name);
     let exists = fs::try_exists(blog_path)
         .await
@@ -45,76 +45,12 @@ pub async fn ensure_post_folder(blog_name: &str, post_id: &str) -> Result<PathBu
     Ok(post_path)
 }
 
-pub async fn download_image_content(
-    post_folder: &Path,
-    image_url: &str,
-    image_name: &str,
-) -> Result<DownloadResult> {
-    let safe_name = sanitize_filename(image_name);
-    let output_path = post_folder.join(format!("{}.jpg", safe_name));
-
-    let exists = fs::try_exists(&output_path).await.with_context(|| {
-        format!(
-            "Failed to check existence of image file '{}'",
-            output_path.display()
-        )
-    })?;
-    if exists {
-        return Ok(DownloadResult::Skipped);
-    }
-
-    let client = reqwest::Client::new();
-    let resp = client
-        .get(image_url)
-        .send()
-        .await
-        .with_context(|| format!("HTTP GET failed for image URL '{}'", image_url))?;
-    if !resp.status().is_success() {
-        return Ok(DownloadResult::Error(format!("HTTP {}", resp.status())));
-    }
-
-    let total_size = resp.content_length().unwrap_or(0);
-
-    let pb = if total_size > 0 {
-        let pb = ProgressBar::new(total_size);
-        pb.set_style(
-            ProgressStyle::with_template(
-                "{spinner:.green} [{bar:40.cyan/blue}] {bytes}/{total_bytes} ({eta})",
-            )?
-            .progress_chars("=> "),
-        );
-        pb
-    } else {
-        let pb = ProgressBar::new_spinner();
-        pb.set_style(ProgressStyle::with_template(
-            "{spinner:.green} Downloading image... {bytes}",
-        )?);
-        pb.enable_steady_tick(Duration::from_millis(100));
-        pb
-    };
-
-    let mut file = fs::File::create(&output_path)
-        .await
-        .with_context(|| format!("Failed to create file '{}'", output_path.display()))?;
-    let mut stream = resp.bytes_stream();
-
-    while let Some(chunk) = stream.next().await {
-        let chunk =
-            chunk.with_context(|| format!("Error while reading chunk from '{}'", image_url))?;
-        file.write_all(&chunk).await?;
-        pb.inc(chunk.len() as u64);
-    }
-    pb.finish_and_clear();
-
-    Ok(DownloadResult::Success)
-}
-
 pub async fn download_video_content(
     folder_path: &Path,
-    video_url: &str,
-    video_title: &str,
+    url: &str,
+    title: &str,
 ) -> Result<DownloadResult> {
-    let safe_name = sanitize_filename(video_title);
+    let safe_name = sanitize_filename(title);
     let output_path = folder_path.join(format!("{}.mp4", safe_name));
 
     let exists = fs::try_exists(&output_path).await.with_context(|| {
@@ -128,7 +64,7 @@ pub async fn download_video_content(
     }
 
     let pb = ProgressBar::new_spinner();
-    pb.set_prefix(format!("Downloading '{}'", video_title));
+    pb.set_prefix(format!("Downloading '{}'", title));
     pb.set_style(
         ProgressStyle::with_template("{spinner:.green} {prefix}... Elapsed {msg}")?
             .tick_strings(&["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]),
@@ -137,14 +73,14 @@ pub async fn download_video_content(
 
     let mut child = Command::new("ffmpeg")
         .arg("-i")
-        .arg(video_url)
+        .arg(url)
         .arg("-c")
         .arg("copy")
         .arg(output_path.to_string_lossy().to_string())
         .stdout(Stdio::null())
         .stderr(Stdio::null())
         .spawn()
-        .with_context(|| format!("Failed to spawn ffmpeg for URL '{}'", video_url))?;
+        .with_context(|| format!("Failed to spawn ffmpeg for URL '{}'", url))?;
 
     let start = Instant::now();
     loop {
@@ -196,26 +132,29 @@ pub async fn download_file_content(
     post_folder: &Path,
     url: &str,
     title: &str,
-    signed_query: &str,
+    signed_query: Option<&str>,
 ) -> Result<DownloadResult> {
     let safe_name = sanitize_filename(title);
     let output_path = post_folder.join(safe_name);
 
     let exists = fs::try_exists(&output_path).await.with_context(|| {
         format!(
-            "Failed to check existence of audio file '{}'",
+            "Failed to check existence of file '{}'",
             output_path.display()
         )
     })?;
     if exists {
         return Ok(DownloadResult::Skipped);
     }
-    if signed_query.is_empty() {
+    
+    let signed_query = if signed_query.is_some() && signed_query.unwrap().is_empty() {
         return Ok(DownloadResult::Error(format!(
             "Authorization required: to download file '{}' an access token must be provided",
             title
         )));
-    }
+    } else {
+        signed_query.unwrap_or("")
+    };
 
     let full_url = format!("{}{}", url, signed_query);
     let client = reqwest::Client::new();
