@@ -55,7 +55,7 @@ async fn process_boosty_url(client: &ApiClient, posts_limit: i32, input: &str) -
         }
     };
 
-    post_handler::post_processor(result)
+    post_handler::process_posts(result)
         .await
         .with_context(|| format!("Error while processing post content: {}", input))?;
 

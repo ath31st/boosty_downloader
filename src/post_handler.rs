@@ -9,7 +9,7 @@ pub enum PostsResult {
     Single(Post),
 }
 
-pub async fn post_processor(result: PostsResult) -> Result<()> {
+pub async fn process_posts(result: PostsResult) -> Result<()> {
     match result {
         PostsResult::Multiple(posts) => {
             for post in posts {
