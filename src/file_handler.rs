@@ -71,7 +71,16 @@ pub async fn download_video_content(
     );
     pb.enable_steady_tick(Duration::from_millis(100));
 
+    let headers = concat!(
+        "User-Agent: Mozilla/5.0 (X11; Linux x86_64) ",
+        "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36\r\n",
+        "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7\r\n",
+        "Accept-Encoding: gzip, deflate, br, zstd\r\n",
+    );
+
     let mut child = Command::new("ffmpeg")
+        .arg("-headers")
+        .arg(headers)
         .arg("-i")
         .arg(url)
         .arg("-c")
@@ -146,7 +155,7 @@ pub async fn download_file_content(
     if exists {
         return Ok(DownloadResult::Skipped);
     }
-    
+
     let signed_query = if signed_query.is_some() && signed_query.unwrap().is_empty() {
         return Ok(DownloadResult::Error(format!(
             "Authorization required: to download file '{}' an access token must be provided",
