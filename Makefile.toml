@@ -1,0 +1,15 @@
+[tasks.build-linux]
+command = "cargo"
+args = ["build", "--target", "x86_64-unknown-linux-gnu", "--release"]
+
+[tasks.build-windows]
+command = "cargo"
+args = ["build", "--target", "x86_64-pc-windows-gnu", "--release"]
+
+[tasks.build-macos-intel]
+command = "cargo"
+args = ["build", "--target", "x86_64-apple-darwin", "--release"]
+
+[tasks.build-macos-apple]
+command = "cargo"
+args = ["build", "--target", "aarch64-apple-darwin", "--release"]
