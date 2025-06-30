@@ -12,7 +12,7 @@ use reqwest::Client;
 use std::time::Duration;
 
 const API_URL: &str = "https://api.boosty.to";
-const POSTS_LIMIT: i32 = 5;
+const POSTS_LIMIT: i32 = 100;
 const TIMEOUT_SECONDS: u64 = 10;
 
 #[tokio::main]
