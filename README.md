@@ -88,4 +88,4 @@ Boosty Downloader - это консольное приложение для за
 
 ## Лицензия
 
-MIT License
+[MIT License](LICENSE)
