@@ -1,5 +1,7 @@
 # Boosty Downloader
 
+![logo.jpg](images/logo.jpg)
+
 ## Оглавление
 
 - [Версия приложения](#версия-приложения)
