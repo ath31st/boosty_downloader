@@ -1,13 +1,11 @@
+use crate::headers;
 use anyhow::{Context, Result};
 use futures_util::StreamExt;
 use indicatif::{ProgressBar, ProgressStyle};
 use std::path::{Path, PathBuf};
-use std::process::Stdio;
 use std::time::Duration;
 use tokio::fs;
 use tokio::io::AsyncWriteExt;
-use tokio::process::Command;
-use tokio::time::{Instant, sleep};
 
 pub enum DownloadResult {
     Error(String),
@@ -43,75 +41,6 @@ pub async fn ensure_post_folder(blog_name: &str, post_id: &str) -> Result<PathBu
             .with_context(|| format!("Failed to create post folder '{}'", post_path.display()))?;
     }
     Ok(post_path)
-}
-
-pub async fn download_video_content(
-    folder_path: &Path,
-    url: &str,
-    title: &str,
-) -> Result<DownloadResult> {
-    let safe_name = sanitize_filename(title);
-    let output_path = folder_path.join(format!("{}.mp4", safe_name));
-
-    let exists = fs::try_exists(&output_path).await.with_context(|| {
-        format!(
-            "Failed to check existence of video file '{}'",
-            output_path.display()
-        )
-    })?;
-    if exists {
-        return Ok(DownloadResult::Skipped);
-    }
-
-    let pb = ProgressBar::new_spinner();
-    pb.set_prefix(format!("Downloading '{}'", title));
-    pb.set_style(
-        ProgressStyle::with_template("{spinner:.green} {prefix}... Elapsed {msg}")?
-            .tick_strings(&["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]),
-    );
-    pb.enable_steady_tick(Duration::from_millis(100));
-
-    let headers = concat!(
-        "User-Agent: Mozilla/5.0 (X11; Linux x86_64) ",
-        "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36\r\n",
-        "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7\r\n",
-        "Accept-Encoding: gzip, deflate, br, zstd\r\n",
-    );
-
-    let mut child = Command::new("ffmpeg")
-        .arg("-headers")
-        .arg(headers)
-        .arg("-i")
-        .arg(url)
-        .arg("-c")
-        .arg("copy")
-        .arg(output_path.to_string_lossy().to_string())
-        .stdout(Stdio::null())
-        .stderr(Stdio::null())
-        .spawn()
-        .with_context(|| format!("Failed to spawn ffmpeg for URL '{}'", url))?;
-
-    let start = Instant::now();
-    loop {
-        match child
-            .try_wait()
-            .with_context(|| "Error while waiting for ffmpeg process")?
-        {
-            Some(status) => {
-                pb.finish_and_clear();
-                return if status.success() {
-                    Ok(DownloadResult::Success)
-                } else {
-                    Ok(DownloadResult::Error("ffmpeg failed".into()))
-                };
-            }
-            None => {
-                let secs = start.elapsed().as_secs();
-                pb.set_message(format!("{}s", secs));
-                sleep(Duration::from_secs(1)).await;
-            }
-        }
-    }
 }
 
 pub async fn download_text_content(
@@ -169,6 +98,7 @@ pub async fn download_file_content(
     let client = reqwest::Client::new();
     let resp = client
         .get(full_url)
+        .headers(headers::default_download_headers())
         .send()
         .await
         .with_context(|| format!("HTTP GET failed for file URL '{}'", url))?;

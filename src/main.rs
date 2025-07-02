@@ -4,6 +4,7 @@ mod file_handler;
 mod menu_handler;
 mod parser;
 mod post_handler;
+mod headers;
 
 use crate::menu_handler::handle_menu;
 use anyhow::Result;
@@ -24,8 +25,6 @@ async fn main() {
 }
 
 async fn run() -> Result<()> {
-    checks::check_ffmpeg()?;
-
     let client = Client::builder()
         .timeout(Duration::from_secs(TIMEOUT_SECONDS))
         .build()
