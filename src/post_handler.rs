@@ -1,3 +1,4 @@
+use crate::file_handler::normalize_md_file;
 use crate::{cli, file_handler, parser};
 use anyhow::{Context, Result};
 use boosty_api::api_response::Post;
@@ -61,7 +62,7 @@ async fn process(post: &Post) -> Result<()> {
             }
             ContentItem::Video { url } => {
                 let download_res =
-                    file_handler::download_text_content(&post_folder, post_title, &url)
+                    file_handler::download_text_content(&post_folder, post_title, &url, None)
                         .await
                         .with_context(|| {
                             format!(
@@ -104,35 +105,48 @@ async fn process(post: &Post) -> Result<()> {
                 content,
             } => {
                 if let Some(parsed) = parser::parse_text_content(&content, &modificator) {
-                    let download_res =
-                        file_handler::download_text_content(&post_folder, post_title, &parsed)
-                            .await
-                            .with_context(|| {
-                                format!(
-                                    "Failed to download text '{}' for post '{}'",
-                                    content, post_title
-                                )
-                            })?;
+                    let download_res = file_handler::download_text_content(
+                        &post_folder,
+                        post_title,
+                        &parsed,
+                        Some(&modificator),
+                    )
+                    .await
+                    .with_context(|| {
+                        format!(
+                            "Failed to download text '{}' for post '{}'",
+                            content, post_title
+                        )
+                    })?;
                     cli::show_download_result(download_res, post_title, post_title);
                 }
             }
             ContentItem::Link { content, url, .. } => {
                 if let Some(parsed) = parser::parse_link_content(&content, &url) {
-                    let download_res =
-                        file_handler::download_text_content(&post_folder, post_title, &parsed)
-                            .await
-                            .with_context(|| {
-                                format!(
-                                    "Failed to download link '{}' for post '{}'",
-                                    url, post_title
-                                )
-                            })?;
+                    let download_res = file_handler::download_text_content(
+                        &post_folder,
+                        post_title,
+                        &parsed,
+                        None,
+                    )
+                    .await
+                    .with_context(|| {
+                        format!(
+                            "Failed to download link '{}' for post '{}'",
+                            url, post_title
+                        )
+                    })?;
                     cli::show_download_result(download_res, post_title, post_title);
                 }
             }
             ContentItem::Unknown => cli::unknown_content_item(),
         }
     }
+
+    normalize_md_file(&post_folder, post_title)
+        .await
+        .with_context(|| format!("Failed to normalize '{}.md'", post_title))?;
+
     Ok(())
 }
 

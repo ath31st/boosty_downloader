@@ -2,15 +2,50 @@ use crate::headers;
 use anyhow::{Context, Result};
 use futures_util::StreamExt;
 use indicatif::{ProgressBar, ProgressStyle};
+use sha2::{Digest, Sha256};
+use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 use std::time::Duration;
 use tokio::fs;
-use tokio::io::AsyncWriteExt;
+use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 
 pub enum DownloadResult {
     Error(String),
     Success,
     Skipped,
+}
+
+fn hash_str(content: &str) -> String {
+    let mut hasher = Sha256::new();
+    hasher.update(content.as_bytes());
+    format!("{:x}", hasher.finalize())
+}
+
+async fn load_existing_hashes(path: &Path) -> Result<HashSet<String>> {
+    if !fs::try_exists(path).await? {
+        return Ok(HashSet::new());
+    }
+
+    let file = fs::File::open(path).await?;
+    let reader = BufReader::new(file);
+    let mut lines = reader.lines();
+    let mut hashes = HashSet::new();
+
+    while let Some(line) = lines.next_line().await? {
+        hashes.insert(line);
+    }
+
+    Ok(hashes)
+}
+
+async fn append_hash_to_file(path: &Path, hash: &str) -> Result<()> {
+    let mut file = fs::OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(path)
+        .await?;
+    file.write_all(format!("{}\n", hash).as_bytes()).await?;
+    Ok(())
 }
 
 async fn ensure_blog_folder(blog_name: &str) -> Result<PathBuf> {
@@ -47,9 +82,11 @@ pub async fn download_text_content(
     folder_path: &Path,
     post_title: &str,
     content: &str,
+    modificator: Option<&str>,
 ) -> Result<DownloadResult> {
     let safe_name = sanitize_filename(post_title);
     let output_path = folder_path.join(format!("{}.md", safe_name));
+    let hashes_path = folder_path.join(format!("{}.hashes", safe_name));
 
     let mut file = fs::OpenOptions::new()
         .create(true)
@@ -59,9 +96,28 @@ pub async fn download_text_content(
         .await
         .with_context(|| format!("Failed to open file '{}'", output_path.display()))?;
 
-    file.write_all(content.as_bytes())
+    if modificator.is_some() && modificator.unwrap() == "BLOCK_END" {
+        file.write_all(b"\n").await?;
+        return Ok(DownloadResult::Success);
+    }
+
+    let trimmed = content.trim();
+    if trimmed.is_empty() {
+        return Ok(DownloadResult::Skipped);
+    }
+
+    let existing = load_existing_hashes(&hashes_path).await?;
+    let hash = hash_str(trimmed);
+    if existing.contains(&hash) {
+        return Ok(DownloadResult::Skipped);
+    }
+
+    file.write_all(trimmed.as_bytes())
         .await
         .with_context(|| format!("Failed to write to file '{}'", output_path.display()))?;
+    file.write_all(b"\n").await?;
+
+    append_hash_to_file(&hashes_path, &hash).await?;
 
     Ok(DownloadResult::Success)
 }
@@ -140,6 +196,34 @@ pub async fn download_file_content(
     pb.finish_and_clear();
 
     Ok(DownloadResult::Success)
+}
+
+pub async fn normalize_md_file(post_folder: &Path, title: &str) -> Result<()> {
+    let md_path = post_folder.join(format!("{}.md", sanitize_filename(title)));
+    let text = fs::read_to_string(&md_path).await?;
+
+    let mut normalized = String::new();
+    let mut empty_count = 0;
+
+    for line in text.lines() {
+        let trimmed = line.trim_end();
+        if trimmed.is_empty() {
+            empty_count += 1;
+            if empty_count <= 2 {
+                normalized.push_str("\n");
+            }
+        } else {
+            empty_count = 0;
+            normalized.push_str(trimmed);
+            normalized.push_str("\n");
+        }
+    }
+    if !normalized.ends_with("\n") {
+        normalized.push_str("\n");
+    }
+
+    fs::write(md_path, normalized).await?;
+    Ok(())
 }
 
 fn sanitize_filename(name: &str) -> String {
