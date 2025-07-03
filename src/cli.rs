@@ -1,6 +1,6 @@
 use crate::file_handler::DownloadResult;
-use std::collections::HashMap;
 use anyhow::Error;
+use std::collections::HashMap;
 
 pub const ENTER_PATH: &str = "Enter path to post or posts:";
 pub const ENTER_ACCESS_TOKEN: &str = "Enter access token:";
@@ -14,19 +14,31 @@ pub fn show_menu() {
     println!("4. Exit");
 }
 
+fn info(msg: &str) {
+    println!("\x1b[34mInfo:\x1b[0m {}", msg);
+}
+
+fn error(msg: &str) {
+    eprintln!("\x1b[31mError:\x1b[0m {}", msg);
+}
+
+fn warning(msg: &str) {
+    println!("\x1b[33mWarning:\x1b[0m {}", msg);
+}
+
 pub fn read_input_menu() -> i8 {
     loop {
         println!("Select menu:");
         let mut input = String::new();
 
         if let Err(e) = std::io::stdin().read_line(&mut input) {
-            println!("Error reading input: {}", e);
+            error(&format!("Reading input: {}", e));
             continue;
         }
 
         match input.trim().parse::<i8>() {
             Ok(num) if (1..=4).contains(&num) => return num,
-            _ => println!("Please enter a valid number between 1 and 4"),
+            _ => error("Please enter a valid number between 1 and 4"),
         }
     }
 }
@@ -37,12 +49,12 @@ pub fn read_user_input(prompt: &str) -> String {
         let mut input = String::new();
 
         if let Err(e) = std::io::stdin().read_line(&mut input) {
-            println!("Error reading input: {}", e);
+            error(&format!("Reading input: {}", e));
             continue;
         }
 
         if input.trim().is_empty() {
-            println!("Input is empty");
+            warning("Input is empty");
             continue;
         }
 
@@ -57,23 +69,26 @@ pub fn exit_message() {
 pub fn show_download_result(result: DownloadResult, file_name: &str, post_title: &str) {
     match result {
         DownloadResult::Skipped => {
-            println!("File '{}' skipped", file_name);
+            info(&format!("File '{}' skipped", file_name));
         }
-        DownloadResult::Error(error) => {
-            println!("Error: {}", error);
+        DownloadResult::Error(err) => {
+            error(&err);
         }
         DownloadResult::Success => {
-            println!("File '{}' downloaded for post {}", file_name, post_title);
+            info(&format!(
+                "File '{}' downloaded for post {}",
+                file_name, post_title
+            ));
         }
     }
 }
 
 pub fn unknown_content_item() {
-    println!("\x1b[34mInfo:\x1b[0m Post item with unknown content");
+    info("Post item with unknown content");
 }
 
 pub fn show_api_client_headers(headers: &HashMap<String, String>) {
-    println!("Current API client headers:");
+    info("Current API client headers:");
     for (key, value) in headers {
         println!("  {}: {}", key, value);
     }
@@ -81,15 +96,18 @@ pub fn show_api_client_headers(headers: &HashMap<String, String>) {
 }
 
 pub fn post_not_available_or_without_content(post_title: &str) {
-    println!("Post '{}' not available or has no content", post_title);
+    warning(&format!(
+        "Post '{}' not available or has no content",
+        post_title
+    ));
 }
 
 pub fn print_error(e: &Error) {
     if cfg!(debug_assertions) {
         for cause in e.chain() {
-            eprintln!("\x1b[31mError:\x1b[0m {}", cause);
+            error(&format!("Caused by: {}", cause));
         }
     } else {
-        eprintln!("\x1b[31mError:\x1b[0m {}", e);
+        error(&format!("{}", e));
     }
 }
