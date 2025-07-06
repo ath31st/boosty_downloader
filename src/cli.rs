@@ -15,15 +15,15 @@ pub fn show_menu() {
 }
 
 fn info(msg: &str) {
-    println!("\x1b[34mInfo:\x1b[0m {}", msg);
+    println!("\x1b[34mInfo:\x1b[0m {msg}");
 }
 
 fn error(msg: &str) {
-    eprintln!("\x1b[31mError:\x1b[0m {}", msg);
+    eprintln!("\x1b[31mError:\x1b[0m {msg}");
 }
 
 fn warning(msg: &str) {
-    println!("\x1b[33mWarning:\x1b[0m {}", msg);
+    println!("\x1b[33mWarning:\x1b[0m {msg}");
 }
 
 pub fn read_input_menu() -> i8 {
@@ -32,7 +32,7 @@ pub fn read_input_menu() -> i8 {
         let mut input = String::new();
 
         if let Err(e) = std::io::stdin().read_line(&mut input) {
-            error(&format!("Reading input: {}", e));
+            error(&format!("Reading input: {e}"));
             continue;
         }
 
@@ -45,11 +45,11 @@ pub fn read_input_menu() -> i8 {
 
 pub fn read_user_input(prompt: &str) -> String {
     loop {
-        println!("{}", prompt);
+        println!("{prompt}");
         let mut input = String::new();
 
         if let Err(e) = std::io::stdin().read_line(&mut input) {
-            error(&format!("Reading input: {}", e));
+            error(&format!("Reading input: {e}"));
             continue;
         }
 
@@ -69,15 +69,14 @@ pub fn exit_message() {
 pub fn show_download_result(result: DownloadResult, file_name: &str, post_title: &str) {
     match result {
         DownloadResult::Skipped => {
-            info(&format!("File '{}' skipped", file_name));
+            info(&format!("File '{file_name}' skipped"));
         }
         DownloadResult::Error(err) => {
             error(&err);
         }
         DownloadResult::Success => {
             info(&format!(
-                "File '{}' downloaded for post {}",
-                file_name, post_title
+                "File '{file_name}' downloaded for post {post_title}"
             ));
         }
     }
@@ -90,24 +89,23 @@ pub fn unknown_content_item() {
 pub fn show_api_client_headers(headers: &HashMap<String, String>) {
     info("Current API client headers:");
     for (key, value) in headers {
-        println!("  {}: {}", key, value);
+        println!("  {key}: {value}");
     }
     println!()
 }
 
 pub fn post_not_available_or_without_content(post_title: &str) {
     warning(&format!(
-        "Post '{}' not available or has no content",
-        post_title
+        "Post '{post_title}' not available or has no content",
     ));
 }
 
 pub fn print_error(e: &Error) {
     if cfg!(debug_assertions) {
         for cause in e.chain() {
-            error(&format!("Caused by: {}", cause));
+            error(&format!("Caused by: {cause}"));
         }
     } else {
-        error(&format!("{}", e));
+        error(&format!("{e}"));
     }
 }

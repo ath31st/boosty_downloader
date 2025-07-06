@@ -44,7 +44,7 @@ async fn append_hash_to_file(path: &Path, hash: &str) -> Result<()> {
         .append(true)
         .open(path)
         .await?;
-    file.write_all(format!("{}\n", hash).as_bytes()).await?;
+    file.write_all(format!("{hash}\n").as_bytes()).await?;
     Ok(())
 }
 
@@ -52,11 +52,11 @@ async fn ensure_blog_folder(blog_name: &str) -> Result<PathBuf> {
     let blog_path = Path::new(blog_name);
     let exists = fs::try_exists(blog_path)
         .await
-        .with_context(|| format!("Failed to check if blog folder '{}' exists", blog_name))?;
+        .with_context(|| format!("Failed to check if blog folder '{blog_name}' exists"))?;
     if !exists {
         fs::create_dir_all(blog_path)
             .await
-            .with_context(|| format!("Failed to create blog folder '{}'", blog_name))?;
+            .with_context(|| format!("Failed to create blog folder '{blog_name}'"))?;
     }
     Ok(blog_path.to_path_buf())
 }
@@ -85,8 +85,8 @@ pub async fn download_text_content(
     modificator: Option<&str>,
 ) -> Result<DownloadResult> {
     let safe_name = sanitize_filename(post_title);
-    let output_path = folder_path.join(format!("{}.md", safe_name));
-    let hashes_path = folder_path.join(format!("{}.hashes", safe_name));
+    let output_path = folder_path.join(format!("{safe_name}.md"));
+    let hashes_path = folder_path.join(format!("{safe_name}.hashes"));
 
     let mut file = fs::OpenOptions::new()
         .create(true)
@@ -143,24 +143,23 @@ pub async fn download_file_content(
 
     let signed_query = if signed_query.is_some() && signed_query.unwrap().is_empty() {
         return Ok(DownloadResult::Error(format!(
-            "Authorization required: to download file '{}' an access token must be provided",
-            title
+            "Authorization required: to download file '{title}' an access token must be provided"
         )));
     } else {
         signed_query.unwrap_or("")
     };
 
-    let full_url = format!("{}{}", url, signed_query);
+    let full_url = format!("{url}{signed_query}");
     let client = reqwest::Client::new();
     let resp = client
         .get(full_url)
         .headers(headers::default_download_headers())
         .send()
         .await
-        .with_context(|| format!("HTTP GET failed for file URL '{}'", url))?;
+        .with_context(|| format!("HTTP GET failed for file URL '{url}'"))?;
     if !resp.status().is_success() {
         let error_body = resp.text().await.unwrap_or_default();
-        return Ok(DownloadResult::Error(format!("HTTP {}", error_body)));
+        return Ok(DownloadResult::Error(format!("HTTP {error_body}")));
     }
 
     let total_size = resp.content_length().unwrap_or(0);
@@ -189,7 +188,7 @@ pub async fn download_file_content(
     let mut stream = resp.bytes_stream();
 
     while let Some(chunk) = stream.next().await {
-        let chunk = chunk.with_context(|| format!("Error while reading chunk from '{}'", url))?;
+        let chunk = chunk.with_context(|| format!("Error while reading chunk from '{url}'"))?;
         file.write_all(&chunk).await?;
         pb.inc(chunk.len() as u64);
     }
@@ -210,16 +209,16 @@ pub async fn normalize_md_file(post_folder: &Path, title: &str) -> Result<()> {
         if trimmed.is_empty() {
             empty_count += 1;
             if empty_count <= 2 {
-                normalized.push_str("\n");
+                normalized.push('\n');
             }
         } else {
             empty_count = 0;
             normalized.push_str(trimmed);
-            normalized.push_str("\n");
+            normalized.push('\n');
         }
     }
     if !normalized.ends_with("\n") {
-        normalized.push_str("\n");
+        normalized.push('\n');
     }
 
     fs::write(md_path, normalized).await?;

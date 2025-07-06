@@ -7,7 +7,7 @@ use std::path::PathBuf;
 
 pub enum PostsResult {
     Multiple(Vec<Post>),
-    Single(Post),
+    Single(Box<Post>),
 }
 
 pub async fn process_posts(result: PostsResult) -> Result<()> {
@@ -38,25 +38,19 @@ async fn process(post: &Post) -> Result<()> {
     let post_folder: PathBuf = file_handler::ensure_post_folder(blog_name, post_title)
         .await
         .with_context(|| {
-            format!(
-                "Failed to create folder for post '{}' in blog '{}'",
-                post_title, blog_name
-            )
+            format!("Failed to create folder for post '{post_title}' in blog '{blog_name}'")
         })?;
     let items = post.extract_content();
 
     for item in items {
         match item {
             ContentItem::Image { url, id } => {
-                let image_name = format!("{}.jpg", id);
+                let image_name = format!("{id}.jpg");
                 let download_res =
                     file_handler::download_file_content(&post_folder, &url, &image_name, None)
                         .await
                         .with_context(|| {
-                            format!(
-                                "Failed to download image '{}' for post '{}'",
-                                id, post_title
-                            )
+                            format!("Failed to download image '{id}' for post '{post_title}'")
                         })?;
                 cli::show_download_result(download_res, &id, post_title);
             }
@@ -65,10 +59,7 @@ async fn process(post: &Post) -> Result<()> {
                     file_handler::download_text_content(&post_folder, post_title, &url, None)
                         .await
                         .with_context(|| {
-                            format!(
-                                "Failed to download video url '{}' for post '{}'",
-                                url, post_title
-                            )
+                            format!("Failed to download video url '{url}' for post '{post_title}'")
                         })?;
                 cli::show_download_result(download_res, post_title, post_title);
             }
@@ -77,12 +68,9 @@ async fn process(post: &Post) -> Result<()> {
                     file_handler::download_file_content(&post_folder, &url, &title, None)
                         .await
                         .with_context(|| {
-                            format!(
-                                "Failed to download video '{}' for post '{}'",
-                                title, post_title
-                            )
+                            format!("Failed to download video '{title}' for post '{post_title}'")
                         })?;
-                cli::show_download_result(download_res, &title, &post_title);
+                cli::show_download_result(download_res, &title, post_title);
             }
             ContentItem::Audio { url, title, .. } | ContentItem::File { url, title, .. } => {
                 let download_res = file_handler::download_file_content(
@@ -93,12 +81,9 @@ async fn process(post: &Post) -> Result<()> {
                 )
                 .await
                 .with_context(|| {
-                    format!(
-                        "Failed to download file '{}' for post '{}'",
-                        title, post_title
-                    )
+                    format!("Failed to download file '{title}' for post '{post_title}'")
                 })?;
-                cli::show_download_result(download_res, &title, &post_title);
+                cli::show_download_result(download_res, &title, post_title);
             }
             ContentItem::Text {
                 modificator,
@@ -113,10 +98,7 @@ async fn process(post: &Post) -> Result<()> {
                     )
                     .await
                     .with_context(|| {
-                        format!(
-                            "Failed to download text '{}' for post '{}'",
-                            content, post_title
-                        )
+                        format!("Failed to download text '{content}' for post '{post_title}'")
                     })?;
                     cli::show_download_result(download_res, post_title, post_title);
                 }
@@ -131,10 +113,7 @@ async fn process(post: &Post) -> Result<()> {
                     )
                     .await
                     .with_context(|| {
-                        format!(
-                            "Failed to download link '{}' for post '{}'",
-                            url, post_title
-                        )
+                        format!("Failed to download link '{url}' for post '{post_title}'")
                     })?;
                     cli::show_download_result(download_res, post_title, post_title);
                 }
@@ -145,7 +124,7 @@ async fn process(post: &Post) -> Result<()> {
 
     normalize_md_file(&post_folder, post_title)
         .await
-        .with_context(|| format!("Failed to normalize '{}.md'", post_title))?;
+        .with_context(|| format!("Failed to normalize '{post_title}.md'"))?;
 
     Ok(())
 }

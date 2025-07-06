@@ -1,15 +1,15 @@
 [package]
 name = "boosty_downloader"
-version = "0.8.2"
+version = "0.8.3"
 edition = "2024"
 
 [dependencies]
-boosty_api = "0.8.3"
+boosty_api = "0.8.4"
 tokio = { version = "1.45.1", features = ["macros", "rt-multi-thread", "fs", "process"] }
 anyhow = "1.0.98"
 reqwest = { version = "0.12.19", features = ["stream"] }
 url = "2.5.4"
-indicatif = "0.17.11"
+indicatif = "0.18.0"
 futures-util = "0.3.31"
 serde_json = "1.0.140"
 sha2 = "0.10.9"

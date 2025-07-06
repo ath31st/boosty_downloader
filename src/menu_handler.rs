@@ -37,27 +37,28 @@ pub async fn handle_menu(client: &ApiClient, posts_limit: i32) -> Result<bool> {
 
 async fn process_boosty_url(client: &ApiClient, posts_limit: i32, input: &str) -> Result<()> {
     let parsed = parser::parse_boosty_url(input)
-        .with_context(|| format!("Failed to parse Boosty URL '{}'", input))?;
+        .with_context(|| format!("Failed to parse Boosty URL '{input}'"))?;
 
     let result = match parsed {
         parser::BoostyUrl::Blog(blog) => {
             let multiple = client
                 .fetch_posts(&blog, posts_limit)
                 .await
-                .with_context(|| format!("Failed to fetch posts for blog '{}'", blog))?;
+                .with_context(|| format!("Failed to fetch posts for blog '{blog}'"))?;
             post_handler::PostsResult::Multiple(multiple)
         }
         parser::BoostyUrl::Post { blog, post_id } => {
-            let single = client.fetch_post(&blog, &post_id).await.with_context(|| {
-                format!("Failed to fetch post '{}' for blog '{}'", post_id, blog)
-            })?;
-            post_handler::PostsResult::Single(single)
+            let single = client
+                .fetch_post(&blog, &post_id)
+                .await
+                .with_context(|| format!("Failed to fetch post '{post_id}' for blog '{blog}'"))?;
+            post_handler::PostsResult::Single(Box::from(single))
         }
     };
 
     post_handler::process_posts(result)
         .await
-        .with_context(|| format!("Error while processing post content: {}", input))?;
+        .with_context(|| format!("Error while processing post content: {input}"))?;
 
     Ok(())
 }

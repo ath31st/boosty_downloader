@@ -8,7 +8,7 @@ pub enum BoostyUrl {
 }
 
 pub fn parse_boosty_url(url_str: &str) -> Result<BoostyUrl> {
-    let url = Url::parse(url_str).with_context(|| format!("Invalid URL: '{}'", url_str))?;
+    let url = Url::parse(url_str).with_context(|| format!("Invalid URL: '{url_str}'"))?;
 
     let host = url
         .host_str()
@@ -40,9 +40,9 @@ pub fn parse_text_content(content: &str, modificator: &str) -> Option<String> {
     }
 
     let parsed: Vec<Value> = serde_json::from_str(content)
-        .with_context(|| format!("Failed to parse text content JSON: {}", content))
+        .with_context(|| format!("Failed to parse text content JSON: {content}"))
         .ok()?;
-    let text = parsed.get(0)?.as_str()?;
+    let text = parsed.first()?.as_str()?;
 
     if text.is_empty() {
         return None;
@@ -53,13 +53,13 @@ pub fn parse_text_content(content: &str, modificator: &str) -> Option<String> {
 
 pub fn parse_link_content(content: &str, url: &str) -> Option<String> {
     let parsed: Vec<Value> = serde_json::from_str(content)
-        .with_context(|| format!("Failed to parse link content JSON: {}", content))
+        .with_context(|| format!("Failed to parse link content JSON: {content}"))
         .ok()?;
-    let text = parsed.get(0)?.as_str()?;
+    let text = parsed.first()?.as_str()?;
 
     if text.is_empty() {
         return None;
     }
 
-    Some(format!("{} ({})", text, url))
+    Some(format!("{text} ({url})"))
 }
