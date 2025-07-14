@@ -42,14 +42,14 @@ async fn process_boosty_url(client: &ApiClient, posts_limit: i32, input: &str) -
     let result = match parsed {
         parser::BoostyUrl::Blog(blog) => {
             let multiple = client
-                .fetch_posts(&blog, posts_limit)
+                .get_posts(&blog, posts_limit)
                 .await
                 .with_context(|| format!("Failed to fetch posts for blog '{blog}'"))?;
-            post_handler::PostsResult::Multiple(multiple)
+            post_handler::PostsResult::Multiple(multiple.data)
         }
         parser::BoostyUrl::Post { blog, post_id } => {
             let single = client
-                .fetch_post(&blog, &post_id)
+                .get_post(&blog, &post_id)
                 .await
                 .with_context(|| format!("Failed to fetch post '{post_id}' for blog '{blog}'"))?;
             post_handler::PostsResult::Single(Box::from(single))

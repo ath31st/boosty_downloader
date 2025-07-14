@@ -5,7 +5,7 @@ use tokio::time::timeout;
 
 pub async fn check_api(client: &ApiClient) -> anyhow::Result<()> {
     let fake_blog = "nonexistent";
-    let fut = client.fetch_posts(fake_blog, 1);
+    let fut = client.get_posts(fake_blog, 1);
     match timeout(Duration::from_secs(5), fut).await {
         Ok(Ok(_)) => {
             Ok(())
