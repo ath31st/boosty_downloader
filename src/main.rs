@@ -1,10 +1,10 @@
 mod checks;
 mod cli;
 mod file_handler;
+mod headers;
 mod menu_handler;
 mod parser;
 mod post_handler;
-mod headers;
 
 use crate::menu_handler::handle_menu;
 use anyhow::Result;
@@ -26,7 +26,10 @@ async fn main() {
 
 async fn run() -> Result<()> {
     let client = Client::builder()
-        .timeout(Duration::from_secs(TIMEOUT_SECONDS))
+        .http1_only()
+        .connect_timeout(Duration::from_secs(TIMEOUT_SECONDS))
+        .pool_idle_timeout(None)
+        .tcp_keepalive(Some(Duration::from_secs(TIMEOUT_SECONDS * 3)))
         .build()
         .expect("Failed to build reqwest Client");
 

@@ -16,13 +16,13 @@ pub async fn process_posts(result: PostsResult) -> Result<()> {
             for post in posts {
                 process(&post)
                     .await
-                    .with_context(|| format!("Error processing post '{}'", post.title))?;
+                    .with_context(|| format!("Error processing post '{}'", post.safe_title()))?;
             }
         }
         PostsResult::Single(post) => {
             process(&post)
                 .await
-                .with_context(|| format!("Error processing post '{}'", post.title))?;
+                .with_context(|| format!("Error processing post '{}'", post.safe_title()))?;
         }
     }
     Ok(())
@@ -34,7 +34,7 @@ async fn process(post: &Post) -> Result<()> {
     }
 
     let blog_name = &post.user.blog_url;
-    let post_title = &post.title;
+    let post_title = &post.safe_title();
     let post_folder: PathBuf = file_handler::ensure_post_folder(blog_name, post_title)
         .await
         .with_context(|| {
@@ -131,7 +131,7 @@ async fn process(post: &Post) -> Result<()> {
 
 fn check_available_post(post: &Post) -> bool {
     if !post.has_access || post.data.is_empty() {
-        cli::post_not_available_or_without_content(&post.title);
+        cli::post_not_available_or_without_content(&post.safe_title());
         false
     } else {
         true

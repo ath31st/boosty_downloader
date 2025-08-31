@@ -199,6 +199,9 @@ pub async fn download_file_content(
 
 pub async fn normalize_md_file(post_folder: &Path, title: &str) -> Result<()> {
     let md_path = post_folder.join(format!("{}.md", sanitize_filename(title)));
+    if !fs::try_exists(&md_path).await? {
+        return Ok(());
+    }
     let text = fs::read_to_string(&md_path).await?;
 
     let mut normalized = String::new();
