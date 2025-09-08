@@ -1,5 +1,6 @@
 mod checks;
 mod cli;
+mod config;
 mod file_handler;
 mod headers;
 mod menu_handler;
@@ -13,7 +14,6 @@ use reqwest::Client;
 use std::time::Duration;
 
 const API_URL: &str = "https://api.boosty.to";
-const POSTS_LIMIT: i32 = 100;
 const TIMEOUT_SECONDS: u64 = 10;
 
 #[tokio::main]
@@ -36,10 +36,31 @@ async fn run() -> Result<()> {
     let client = ApiClient::new(client, API_URL);
     checks::check_api(&client).await?;
 
+    apply_config(&client).await?;
+
     loop {
-        if !handle_menu(&client, POSTS_LIMIT).await? {
+        if !handle_menu(&client).await? {
             break;
         }
     }
+    Ok(())
+}
+
+async fn apply_config(client: &ApiClient) -> Result<()> {
+    let cfg = config::load_config().await?;
+
+    if !cfg.access_token.is_empty() {
+        client.set_bearer_token(&cfg.access_token).await?;
+        cli::access_token_set(&cfg.access_token);
+    }
+
+    if !cfg.refresh_token.is_empty() && !cfg.device_id.is_empty() {
+        client
+            .set_refresh_token_and_device_id(&cfg.refresh_token, &cfg.device_id)
+            .await?;
+        cli::refresh_token_set(&cfg.refresh_token);
+        cli::client_id_set(&cfg.device_id);
+    }
+
     Ok(())
 }

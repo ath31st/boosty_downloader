@@ -31,7 +31,6 @@ fn config_path() -> Result<PathBuf> {
 
 pub async fn load_config() -> Result<AppConfig> {
     let path = config_path()?;
-    println!("Config path: {}", path.display());
 
     if !fs::try_exists(&path).await? {
         let default = AppConfig::default();
