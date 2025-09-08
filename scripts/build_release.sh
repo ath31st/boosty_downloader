@@ -2,7 +2,7 @@
 set -euo pipefail
 
 CRATE_NAME="boosty_downloader"
-VERSION="0.8.4"
+VERSION="0._._"
 
 TARGETS=(
   "x86_64-unknown-linux-gnu"
