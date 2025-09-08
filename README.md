@@ -18,7 +18,7 @@
 
 ## Версия приложения
 
-0.8.4
+0.8.5
 
 ## Описание
 
@@ -73,7 +73,10 @@ Boosty Downloader - это консольное приложение для за
     - 1: Загрузка контента по URL поста или блога.
     - 2: Установка access token для авторизации.
     - 3: Установка refresh token и client ID.
-    - 4: Выход.
+    - 4: Очистка access token, refresh token и client ID.
+    - 5: Установка лимита постов.
+    - 6: Показать заголовки API клиента.
+    - 7: Выход.
 3. При выборе загрузки введите URL поста или блога (например, `https://boosty.to/blog_name` или
    `https://boosty.to/blog_name/posts/post_id`).
 4. Контент сохраняется в папку с именем блога, а посты - в подпапки с их ID.
@@ -101,7 +104,7 @@ Boosty Downloader - это консольное приложение для за
 
 ## Зависимости
 
-- boosty_api: 0.8.3
+- boosty_api: 0.13.0
 - tokio: 1.45.1 (features: macros, rt-multi-thread, fs, process)
 - reqwest: 0.12.19 (features: stream)
 - anyhow: 1.0.98
