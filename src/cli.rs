@@ -6,12 +6,16 @@ pub const ENTER_PATH: &str = "Enter path to post or posts:";
 pub const ENTER_ACCESS_TOKEN: &str = "Enter access token:";
 pub const ENTER_REFRESH_TOKEN: &str = "Enter refresh token:";
 pub const ENTER_CLIENT_ID: &str = "Enter client id:";
+pub const ENTER_POSTS_LIMIT: &str = "Enter posts limit:";
 
 pub fn show_menu() {
     println!("1. Download content");
-    println!("2. Enter access token (optional)");
-    println!("3. Enter refresh token and client id (optional)");
-    println!("4. Exit");
+    println!("2. Enter access token");
+    println!("3. Enter refresh token and client id");
+    println!("4. Clear tokens and client id");
+    println!("5. Change posts limit");
+    println!("6. Show API client headers");
+    println!("7. Exit");
 }
 
 fn info(msg: &str) {
@@ -37,8 +41,8 @@ pub fn read_input_menu() -> i8 {
         }
 
         match input.trim().parse::<i8>() {
-            Ok(num) if (1..=4).contains(&num) => return num,
-            _ => error("Please enter a valid number between 1 and 4"),
+            Ok(num) if (1..=7).contains(&num) => return num,
+            _ => error("Please enter a valid number between 1 and 7"),
         }
     }
 }
@@ -92,6 +96,24 @@ pub fn show_api_client_headers(headers: &HashMap<String, String>) {
         println!("  {key}: {value}");
     }
     println!()
+}
+
+pub fn access_token_set(token: &str) {
+    let masked = &token.chars().take(4).collect::<String>();
+    info(&format!("Access token set: {masked}****"));
+}
+
+pub fn refresh_token_set(token: &str) {
+    let masked = &token.chars().take(4).collect::<String>();
+    info(&format!("Refresh token set: {masked}****"));
+}
+
+pub fn client_id_set(client_id: &str) {
+    info(&format!("Client id set: {client_id}"));
+}
+
+pub fn tokens_and_client_id_cleared() {
+    info("Tokens and client id cleared");
 }
 
 pub fn post_not_available_or_without_content(post_title: &str) {
