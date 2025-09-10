@@ -15,7 +15,8 @@ pub fn show_menu() {
     println!("4. Clear tokens and client id");
     println!("5. Change posts limit");
     println!("6. Show API client headers");
-    println!("7. Exit");
+    println!("7. Show config");
+    println!("8. Exit");
 }
 
 fn info(msg: &str) {
@@ -41,8 +42,8 @@ pub fn read_input_menu() -> i8 {
         }
 
         match input.trim().parse::<i8>() {
-            Ok(num) if (1..=7).contains(&num) => return num,
-            _ => error("Please enter a valid number between 1 and 7"),
+            Ok(num) if (1..=8).contains(&num) => return num,
+            _ => error("Please enter a valid number between 1 and 8"),
         }
     }
 }
@@ -98,18 +99,33 @@ pub fn show_api_client_headers(headers: &HashMap<String, String>) {
     println!()
 }
 
+fn masked_str(s: &str) -> String {
+    if s.is_empty() {
+        return s.to_string();
+    }
+
+    let masked = &s.chars().take(4).collect::<String>();
+    format!("{masked}****")
+}
+
 pub fn access_token_set(token: &str) {
-    let masked = &token.chars().take(4).collect::<String>();
-    info(&format!("Access token set: {masked}****"));
+    info(&format!("Access token set: {}", masked_str(token)));
 }
 
 pub fn refresh_token_set(token: &str) {
-    let masked = &token.chars().take(4).collect::<String>();
-    info(&format!("Refresh token set: {masked}****"));
+    info(&format!("Refresh token set: {}", masked_str(token)));
 }
 
 pub fn client_id_set(client_id: &str) {
     info(&format!("Client id set: {client_id}"));
+}
+
+pub fn show_config(config: &crate::config::AppConfig) {
+    println!("Config:");
+    println!("  Access token: {}", masked_str(&config.access_token));
+    println!("  Refresh token: {}", masked_str(&config.refresh_token));
+    println!("  Client id: {}", config.device_id);
+    println!("  Posts limit: {}", config.posts_limit);
 }
 
 pub fn tokens_and_client_id_cleared() {

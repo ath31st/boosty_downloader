@@ -72,7 +72,8 @@ pub async fn handle_menu(client: &ApiClient) -> Result<bool> {
             }
         }
         6 => cli::show_api_client_headers(&client.headers_as_map()),
-        7 => {
+        7 => cli::show_config(&config::load_config().await?),
+        8 => {
             cli::exit_message();
             return Ok(false);
         }
