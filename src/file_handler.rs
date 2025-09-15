@@ -15,6 +15,8 @@ pub enum DownloadResult {
     Skipped,
 }
 
+const MAX_RETRIES: usize = 5;
+
 fn hash_str(content: &str) -> String {
     let mut hasher = Sha256::new();
     hasher.update(content.as_bytes());
@@ -123,6 +125,34 @@ pub async fn download_text_content(
 }
 
 pub async fn download_file_content(
+    post_folder: &Path,
+    url: &str,
+    title: &str,
+    signed_query: Option<&str>,
+) -> Result<DownloadResult> {
+    for attempt in 1..=MAX_RETRIES {
+        match download_file_once(post_folder, url, title, signed_query).await {
+            Ok(r @ DownloadResult::Success) => return Ok(r),
+            Ok(r @ DownloadResult::Skipped) => return Ok(r),
+            Ok(_r @ DownloadResult::Error(_)) if attempt < MAX_RETRIES => {
+                eprintln!("Download attempt {attempt} failed (logical error), retrying...");
+            }
+            Err(e) if attempt < MAX_RETRIES => {
+                eprintln!("Download attempt {attempt} failed with error: {e}, retrying...");
+            }
+            result => return result,
+        }
+
+        let safe_name = sanitize_filename(title);
+        let output_path = post_folder.join(safe_name);
+        let _ = fs::remove_file(&output_path).await;
+
+        tokio::time::sleep(Duration::from_secs(2_u64.pow(attempt as u32))).await;
+    }
+    unreachable!("MAX_RETRIES exhausted but loop should return earlier")
+}
+
+pub async fn download_file_once(
     post_folder: &Path,
     url: &str,
     title: &str,
