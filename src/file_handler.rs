@@ -63,9 +63,9 @@ async fn ensure_blog_folder(blog_name: &str) -> Result<PathBuf> {
     Ok(blog_path.to_path_buf())
 }
 
-pub async fn ensure_post_folder(blog_name: &str, post_id: &str) -> Result<PathBuf> {
+pub async fn ensure_post_folder(blog_name: &str, folder_name: &str) -> Result<PathBuf> {
     let blog_path = ensure_blog_folder(blog_name).await?;
-    let post_path = blog_path.join(post_id);
+    let post_path = blog_path.join(folder_name);
     let exists = fs::try_exists(&post_path).await.with_context(|| {
         format!(
             "Failed to check if post folder '{}' exists",

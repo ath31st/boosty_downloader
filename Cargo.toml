@@ -1,6 +1,6 @@
 [package]
 name = "boosty_downloader"
-version = "0.8.8"
+version = "0.8.9"
 edition = "2024"
 
 [dependencies]
@@ -12,6 +12,7 @@ tokio = { version = "1.45.1", features = [
     "process",
 ] }
 anyhow = "1.0.98"
+chrono = "0.4.42"
 reqwest = { version = "0.12.19", features = ["stream"] }
 url = "2.5.4"
 indicatif = "0.18.0"

@@ -3,6 +3,7 @@ use crate::{cli, file_handler, parser};
 use anyhow::{Context, Result};
 use boosty_api::api_response::Post;
 use boosty_api::post_data_extractor::ContentItem;
+use chrono::{DateTime, Utc};
 use std::path::PathBuf;
 
 pub enum PostsResult {
@@ -35,7 +36,15 @@ async fn process(post: &Post) -> Result<()> {
 
     let blog_name = &post.user.blog_url;
     let post_title = &post.safe_title();
-    let post_folder: PathBuf = file_handler::ensure_post_folder(blog_name, post_title)
+
+    let created_at = post.created_at;
+    let datetime: DateTime<Utc> =
+        DateTime::from_timestamp(created_at, 0).context("Invalid timestamp in post.created_at")?;
+
+    let date_str = datetime.format("%d.%m.%Y").to_string();
+    let folder_name = format!("{date_str} {post_title}");
+
+    let post_folder: PathBuf = file_handler::ensure_post_folder(blog_name, &folder_name)
         .await
         .with_context(|| {
             format!("Failed to create folder for post '{post_title}' in blog '{blog_name}'")
