@@ -36,13 +36,14 @@ async fn process(post: &Post) -> Result<()> {
 
     let blog_name = &post.user.blog_url;
     let post_title = &post.safe_title();
+    let safe_post_title = file_handler::sanitize_name(post_title);
 
     let created_at = post.created_at;
     let datetime: DateTime<Utc> =
         DateTime::from_timestamp(created_at, 0).context("Invalid timestamp in post.created_at")?;
 
     let date_str = datetime.format("%d.%m.%Y").to_string();
-    let folder_name = format!("{date_str} {post_title}");
+    let folder_name = format!("{date_str} {safe_post_title}");
 
     let post_folder: PathBuf = file_handler::ensure_post_folder(blog_name, &folder_name)
         .await

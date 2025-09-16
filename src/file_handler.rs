@@ -86,7 +86,7 @@ pub async fn download_text_content(
     content: &str,
     modificator: Option<&str>,
 ) -> Result<DownloadResult> {
-    let safe_name = sanitize_filename(post_title);
+    let safe_name = sanitize_name(post_title);
     let output_path = folder_path.join(format!("{safe_name}.md"));
     let hashes_path = folder_path.join(format!("{safe_name}.hashes"));
 
@@ -143,7 +143,7 @@ pub async fn download_file_content(
             result => return result,
         }
 
-        let safe_name = sanitize_filename(title);
+        let safe_name = sanitize_name(title);
         let output_path = post_folder.join(safe_name);
         let _ = fs::remove_file(&output_path).await;
 
@@ -158,7 +158,7 @@ pub async fn download_file_once(
     title: &str,
     signed_query: Option<&str>,
 ) -> Result<DownloadResult> {
-    let safe_name = sanitize_filename(title);
+    let safe_name = sanitize_name(title);
     let output_path = post_folder.join(safe_name);
 
     let exists = fs::try_exists(&output_path).await.with_context(|| {
@@ -228,7 +228,7 @@ pub async fn download_file_once(
 }
 
 pub async fn normalize_md_file(post_folder: &Path, title: &str) -> Result<()> {
-    let md_path = post_folder.join(format!("{}.md", sanitize_filename(title)));
+    let md_path = post_folder.join(format!("{}.md", sanitize_name(title)));
     if !fs::try_exists(&md_path).await? {
         return Ok(());
     }
@@ -258,11 +258,11 @@ pub async fn normalize_md_file(post_folder: &Path, title: &str) -> Result<()> {
     Ok(())
 }
 
-fn sanitize_filename(name: &str) -> String {
+pub fn sanitize_name(name: &str) -> String {
     let mut s: String = name
         .chars()
         .map(|c| match c {
-            '/' | '\\' | '\0' => '_',
+            '/' | '\\' | '\0' | ':' | '*' | '?' | '"' | '<' | '>' | '|' => '_',
             c if c.is_control() => '_',
             other => other,
         })
