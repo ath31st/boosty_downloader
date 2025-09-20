@@ -18,7 +18,7 @@
 
 ## Версия приложения
 
-### 0.8.10
+### 0.8.11
 
 ## Описание
 
@@ -105,14 +105,16 @@ Boosty Downloader - это консольное приложение для за
 
 ## Зависимости
 
-- boosty_api: 0.13.0
+- boosty_api: 0.15.0
 - tokio: 1.45.1 (features: macros, rt-multi-thread, fs, process)
 - reqwest: 0.12.19 (features: stream)
 - anyhow: 1.0.98
+- chrono: 0.4.42
 - url: 2.5.4
 - indicatif: 0.17.11
 - futures-util: 0.3.31
 - serde_json: 1.0.140
+- sha2: 0.10.9
 
 ## Лицензия
 

@@ -52,7 +52,9 @@ async fn process(post: &Post) -> Result<()> {
         })?;
     let items = post.extract_content();
 
-    for item in items {
+    let mut stack: Vec<ContentItem> = items;
+
+    while let Some(item) = stack.pop() {
         match item {
             ContentItem::Image { url, id } => {
                 let image_name = format!("{id}.jpg");
@@ -131,6 +133,13 @@ async fn process(post: &Post) -> Result<()> {
                         format!("Failed to download link '{url}' for post '{post_title}'")
                     })?;
                     cli::show_download_result(download_res, post_title, post_title);
+                }
+            }
+            ContentItem::List { items, .. } => {
+                for sublist in items {
+                    for subitem in sublist {
+                        stack.insert(0, subitem);
+                    }
                 }
             }
             ContentItem::Unknown => cli::unknown_content_item(),
