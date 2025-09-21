@@ -2,7 +2,7 @@ use crate::file_handler::normalize_md_file;
 use crate::{cli, file_handler, parser};
 use anyhow::{Context, Result};
 use boosty_api::api_response::Post;
-use boosty_api::post_data_extractor::ContentItem;
+use boosty_api::media_content::ContentItem;
 use chrono::{DateTime, Utc};
 use std::path::PathBuf;
 
