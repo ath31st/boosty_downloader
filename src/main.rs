@@ -1,6 +1,7 @@
 mod checks;
 mod cli;
 mod config;
+mod content_items_handler;
 mod file_handler;
 mod headers;
 mod menu_handler;
