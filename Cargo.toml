@@ -1,6 +1,6 @@
 [package]
 name = "boosty_downloader"
-version = "0.8.12"
+version = "0.8.13"
 edition = "2024"
 
 [dependencies]
