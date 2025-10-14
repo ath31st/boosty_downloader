@@ -1,3 +1,4 @@
+use crate::comment_handler;
 use crate::config;
 use crate::post_handler;
 use crate::{cli, parser};
@@ -86,22 +87,60 @@ async fn process_boosty_url(client: &ApiClient, posts_limit: usize, input: &str)
     let parsed = parser::parse_boosty_url(input)
         .with_context(|| format!("Failed to parse Boosty URL '{input}'"))?;
 
-    let result = match parsed {
+    let result = match &parsed {
         parser::BoostyUrl::Blog(blog) => {
             let multiple = client
-                .get_posts(&blog, posts_limit)
+                .get_posts(blog, posts_limit)
                 .await
                 .with_context(|| format!("Failed to fetch posts for blog '{blog}'"))?;
             post_handler::PostsResult::Multiple(multiple.data)
         }
         parser::BoostyUrl::Post { blog, post_id } => {
             let single = client
-                .get_post(&blog, &post_id)
+                .get_post(blog, post_id)
                 .await
                 .with_context(|| format!("Failed to fetch post '{post_id}' for blog '{blog}'"))?;
             post_handler::PostsResult::Single(Box::from(single))
         }
     };
+
+    let reply_limit = Some(2);
+    let limit = Some(50);
+    let order = Some("top");
+
+    let mut comments_results = Vec::new();
+
+    match &result {
+        post_handler::PostsResult::Single(post) => {
+            let comments_response = client
+                .get_comments(&post.user.blog_url, &post.id, limit, reply_limit, order)
+                .await
+                .with_context(|| format!("Failed to fetch comments for post '{}'", post.id))?;
+
+            comments_results.push(comment_handler::CommentsResult {
+                response: comments_response,
+                safe_post_title: post.safe_title(),
+                blog_url: post.user.blog_url.clone(),
+            });
+        }
+
+        post_handler::PostsResult::Multiple(posts) if !posts.is_empty() => {
+            for post in posts {
+                let comments_response = client
+                    .get_comments(&post.user.blog_url, &post.id, limit, reply_limit, order)
+                    .await
+                    .with_context(|| format!("Failed to fetch comments for post '{}'", post.id))?;
+
+                comments_results.push(comment_handler::CommentsResult {
+                    response: comments_response,
+                    safe_post_title: post.safe_title(),
+                    blog_url: post.user.blog_url.clone(),
+                });
+            }
+        }
+
+        _ => {}
+    }
 
     post_handler::process_posts(result)
         .await

@@ -1,5 +1,6 @@
 mod checks;
 mod cli;
+mod comment_handler;
 mod config;
 mod content_items_handler;
 mod file_handler;
