@@ -1,5 +1,6 @@
 use crate::headers;
 use anyhow::{Context, Result};
+use chrono::{DateTime, Utc};
 use futures_util::StreamExt;
 use indicatif::{ProgressBar, ProgressStyle};
 use sha2::{Digest, Sha256};
@@ -63,7 +64,7 @@ async fn ensure_blog_folder(blog_name: &str) -> Result<PathBuf> {
     Ok(blog_path.to_path_buf())
 }
 
-pub async fn ensure_post_folder(blog_name: &str, folder_name: &str) -> Result<PathBuf> {
+async fn ensure_post_folder(blog_name: &str, folder_name: &str) -> Result<PathBuf> {
     let blog_path = ensure_blog_folder(blog_name).await?;
     let post_path = blog_path.join(folder_name);
     let exists = fs::try_exists(&post_path).await.with_context(|| {
@@ -256,6 +257,43 @@ pub async fn normalize_md_file(post_folder: &Path, title: &str) -> Result<()> {
 
     fs::write(md_path, normalized).await?;
     Ok(())
+}
+
+pub async fn prepare_folder_path(
+    blog_name: &str,
+    post_title: &str,
+    post_created_at: i64,
+) -> Result<PathBuf> {
+    let safe_post_title = sanitize_name(post_title);
+
+    let datetime: DateTime<Utc> = DateTime::from_timestamp(post_created_at, 0)
+        .context("Invalid timestamp in post_created_at")?;
+
+    let date_str = datetime.format("%Y.%m.%d").to_string();
+    let folder_name = format!("{date_str} {safe_post_title}");
+
+    let post_folder_path: PathBuf = ensure_post_folder(blog_name, &folder_name)
+        .await
+        .with_context(|| {
+            format!("Failed to create folder for post '{post_title}' in blog '{blog_name}'")
+        })?;
+
+    Ok(post_folder_path)
+}
+
+pub async fn prepare_folder_path_for_comments(post_folder_path: &Path) -> Result<PathBuf> {
+    let comments_folder_path = post_folder_path.join("comments");
+
+    fs::create_dir_all(&comments_folder_path)
+        .await
+        .with_context(|| {
+            format!(
+                "Failed to create comments folder '{}'",
+                comments_folder_path.display()
+            )
+        })?;
+
+    Ok(comments_folder_path)
 }
 
 pub fn sanitize_name(name: &str) -> String {
