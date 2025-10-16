@@ -120,6 +120,7 @@ async fn process_boosty_url(client: &ApiClient, posts_limit: usize, input: &str)
             comments_results.push(comment_handler::CommentsResult {
                 response: comments_response,
                 safe_post_title: post.safe_title(),
+                created_at: post.created_at,
                 blog_url: post.user.blog_url.clone(),
             });
         }
@@ -134,6 +135,7 @@ async fn process_boosty_url(client: &ApiClient, posts_limit: usize, input: &str)
                 comments_results.push(comment_handler::CommentsResult {
                     response: comments_response,
                     safe_post_title: post.safe_title(),
+                    created_at: post.created_at,
                     blog_url: post.user.blog_url.clone(),
                 });
             }
@@ -145,6 +147,10 @@ async fn process_boosty_url(client: &ApiClient, posts_limit: usize, input: &str)
     post_handler::process_posts(result)
         .await
         .with_context(|| format!("Error while processing post content: {input}"))?;
+
+    comment_handler::process_comments(comments_results)
+        .await
+        .with_context(|| format!("Error while processing comments for post: {input}"))?;
 
     Ok(())
 }
