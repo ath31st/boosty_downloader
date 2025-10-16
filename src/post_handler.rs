@@ -2,7 +2,6 @@ use crate::file_handler::normalize_md_file;
 use crate::{cli, content_items_handler, file_handler};
 use anyhow::{Context, Result};
 use boosty_api::api_response::Post;
-use chrono::{DateTime, Utc};
 use std::path::PathBuf;
 
 pub enum PostsResult {
@@ -33,33 +32,23 @@ async fn process(post: &Post) -> Result<()> {
         return Ok(());
     }
 
-    let blog_name = &post.user.blog_url;
     let post_title = &post.safe_title();
-    let safe_post_title = file_handler::sanitize_name(post_title);
+    let blog_name = &post.user.blog_url;
 
-    let created_at = post.created_at;
-    let datetime: DateTime<Utc> =
-        DateTime::from_timestamp(created_at, 0).context("Invalid timestamp in post.created_at")?;
+    let post_folder_path: PathBuf =
+        file_handler::prepare_folder_path(blog_name, post_title, post.created_at).await?;
 
-    let date_str = datetime.format("%Y.%m.%d").to_string();
-    let folder_name = format!("{date_str} {safe_post_title}");
-
-    let post_folder: PathBuf = file_handler::ensure_post_folder(blog_name, &folder_name)
-        .await
-        .with_context(|| {
-            format!("Failed to create folder for post '{post_title}' in blog '{blog_name}'")
-        })?;
     let items = post.extract_content();
 
     content_items_handler::process_content_items(
         items,
         post_title,
-        &post_folder,
+        &post_folder_path,
         Some(&post.signed_query),
     )
     .await?;
 
-    normalize_md_file(&post_folder, post_title)
+    normalize_md_file(&post_folder_path, post_title)
         .await
         .with_context(|| format!("Failed to normalize '{post_title}.md'"))?;
 
