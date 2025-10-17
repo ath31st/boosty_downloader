@@ -1,5 +1,6 @@
 use crate::comment_handler;
 use crate::config;
+use crate::config::AppConfig;
 use crate::post_handler;
 use crate::{cli, parser};
 use anyhow::{Context, Result};
@@ -14,7 +15,7 @@ pub async fn handle_menu(client: &ApiClient) -> Result<bool> {
         1 => {
             let cfg = config::load_config().await?;
             let input = cli::read_user_input(cli::ENTER_PATH);
-            if let Err(e) = process_boosty_url(client, cfg.posts_limit, &input).await {
+            if let Err(e) = process_boosty_url(client, &cfg, &input).await {
                 cli::print_error(&e)
             };
         }
@@ -84,14 +85,14 @@ pub async fn handle_menu(client: &ApiClient) -> Result<bool> {
     Ok(true)
 }
 
-async fn process_boosty_url(client: &ApiClient, posts_limit: usize, input: &str) -> Result<()> {
+async fn process_boosty_url(client: &ApiClient, cfg: &AppConfig, input: &str) -> Result<()> {
     let parsed = parser::parse_boosty_url(input)
         .with_context(|| format!("Failed to parse Boosty URL '{input}'"))?;
 
     let result = match &parsed {
         parser::BoostyUrl::Blog(blog) => {
             let multiple = client
-                .get_posts(blog, posts_limit)
+                .get_posts(blog, cfg.posts_limit)
                 .await
                 .with_context(|| format!("Failed to fetch posts for blog '{blog}'"))?;
             post_handler::PostsResult::Multiple(multiple.data)
@@ -105,16 +106,18 @@ async fn process_boosty_url(client: &ApiClient, posts_limit: usize, input: &str)
         }
     };
 
-    let reply_limit = Some(10);
-    let limit = Some(300);
-    let order = Some("top");
-
     let mut comments_results = Vec::new();
 
     match &result {
         post_handler::PostsResult::Single(post) => {
             let comments_response = client
-                .get_comments(&post.user.blog_url, &post.id, limit, reply_limit, order)
+                .get_comments(
+                    &post.user.blog_url,
+                    &post.id,
+                    cfg.comments_config.limit,
+                    cfg.comments_config.reply_limit,
+                    cfg.comments_config.order.as_deref(),
+                )
                 .await
                 .with_context(|| format!("Failed to fetch comments for post '{}'", post.id))?;
 
@@ -129,7 +132,13 @@ async fn process_boosty_url(client: &ApiClient, posts_limit: usize, input: &str)
         post_handler::PostsResult::Multiple(posts) if !posts.is_empty() => {
             for post in posts {
                 let comments_response = client
-                    .get_comments(&post.user.blog_url, &post.id, limit, reply_limit, order)
+                    .get_comments(
+                        &post.user.blog_url,
+                        &post.id,
+                        cfg.comments_config.limit,
+                        cfg.comments_config.reply_limit,
+                        cfg.comments_config.order.as_deref(),
+                    )
                     .await
                     .with_context(|| format!("Failed to fetch comments for post '{}'", post.id))?;
 

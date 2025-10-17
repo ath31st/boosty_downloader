@@ -1,7 +1,9 @@
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use tokio::fs;
+
+use crate::cli;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct AppConfig {
@@ -9,6 +11,14 @@ pub struct AppConfig {
     pub access_token: String,
     pub refresh_token: String,
     pub device_id: String,
+    pub comments_config: CommentsConfig,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct CommentsConfig {
+    pub reply_limit: Option<u32>,
+    pub limit: Option<u32>,
+    pub order: Option<String>,
 }
 
 impl Default for AppConfig {
@@ -18,6 +28,11 @@ impl Default for AppConfig {
             access_token: String::new(),
             refresh_token: String::new(),
             device_id: String::new(),
+            comments_config: CommentsConfig {
+                reply_limit: Some(10),
+                limit: Some(300),
+                order: Some("top".to_string()),
+            },
         }
     }
 }
@@ -38,14 +53,23 @@ pub async fn load_config() -> Result<AppConfig> {
         return Ok(default);
     }
 
-    let data = fs::read(&path)
-        .await
-        .with_context(|| format!("Failed to read config file '{}'", path.display()))?;
+    let data = match fs::read(&path).await {
+        Ok(d) => d,
+        Err(e) => {
+            cli::error_while_loading_config(&anyhow::Error::from(e));
 
-    let config: AppConfig = serde_json::from_slice(&data)
-        .with_context(|| format!("Failed to parse config file '{}'", path.display()))?;
+            return reset_config(&path).await;
+        }
+    };
 
-    Ok(config)
+    match serde_json::from_slice::<AppConfig>(&data) {
+        Ok(cfg) => Ok(cfg),
+        Err(e) => {
+            cli::error_while_loading_config(&anyhow::Error::from(e));
+
+            reset_config(&path).await
+        }
+    }
 }
 
 pub async fn save_config(config: &AppConfig) -> Result<()> {
@@ -57,6 +81,14 @@ pub async fn save_config(config: &AppConfig) -> Result<()> {
         .with_context(|| format!("Failed to write config file '{}'", path.display()))?;
 
     Ok(())
+}
+
+async fn reset_config(path: &Path) -> Result<AppConfig> {
+    let _ = fs::remove_file(&path).await;
+
+    let default = AppConfig::default();
+    save_config(&default).await?;
+    Ok(default)
 }
 
 pub async fn update_config<F>(f: F) -> Result<AppConfig>
