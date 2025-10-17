@@ -144,6 +144,11 @@ pub fn comments_for_post_empty_or_not_available(post_title: &str) {
     ));
 }
 
+pub fn error_while_loading_config(e: &Error) {
+    error(&format!("Error while loading config: {e}"));
+    warning("Config will be reset to default");
+}
+
 pub fn print_error(e: &Error) {
     if cfg!(debug_assertions) {
         for cause in e.chain() {
