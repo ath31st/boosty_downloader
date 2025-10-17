@@ -114,9 +114,9 @@ async fn process_boosty_url(client: &ApiClient, cfg: &AppConfig, input: &str) ->
                 .get_comments(
                     &post.user.blog_url,
                     &post.id,
-                    cfg.comments_config.limit,
-                    cfg.comments_config.reply_limit,
-                    cfg.comments_config.order.as_deref(),
+                    cfg.comments.limit,
+                    cfg.comments.reply_limit,
+                    cfg.comments.order.as_deref(),
                 )
                 .await
                 .with_context(|| format!("Failed to fetch comments for post '{}'", post.id))?;
@@ -135,9 +135,9 @@ async fn process_boosty_url(client: &ApiClient, cfg: &AppConfig, input: &str) ->
                     .get_comments(
                         &post.user.blog_url,
                         &post.id,
-                        cfg.comments_config.limit,
-                        cfg.comments_config.reply_limit,
-                        cfg.comments_config.order.as_deref(),
+                        cfg.comments.limit,
+                        cfg.comments.reply_limit,
+                        cfg.comments.order.as_deref(),
                     )
                     .await
                     .with_context(|| format!("Failed to fetch comments for post '{}'", post.id))?;

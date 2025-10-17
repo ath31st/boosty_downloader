@@ -11,7 +11,7 @@ pub struct AppConfig {
     pub access_token: String,
     pub refresh_token: String,
     pub device_id: String,
-    pub comments_config: CommentsConfig,
+    pub comments: CommentsConfig,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -28,7 +28,7 @@ impl Default for AppConfig {
             access_token: String::new(),
             refresh_token: String::new(),
             device_id: String::new(),
-            comments_config: CommentsConfig {
+            comments: CommentsConfig {
                 reply_limit: Some(10),
                 limit: Some(300),
                 order: Some("top".to_string()),
