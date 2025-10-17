@@ -2,6 +2,7 @@ use crate::file_handler::normalize_md_file;
 use crate::{cli, content_items_handler, file_handler};
 use anyhow::{Context, Result};
 use boosty_api::api_response::Post;
+use boosty_api::traits::{HasContent, HasTitle};
 use std::path::PathBuf;
 
 pub enum PostsResult {

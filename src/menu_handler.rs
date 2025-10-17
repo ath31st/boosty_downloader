@@ -4,6 +4,7 @@ use crate::post_handler;
 use crate::{cli, parser};
 use anyhow::{Context, Result};
 use boosty_api::api_client::ApiClient;
+use boosty_api::traits::HasTitle;
 
 pub async fn handle_menu(client: &ApiClient) -> Result<bool> {
     cli::show_menu();
