@@ -2,7 +2,7 @@ use std::path::PathBuf;
 
 use anyhow::{Context, Result};
 use boosty_api::{
-    api_response::CommentsResponse,
+    api_response::{Comment, CommentsResponse},
     media_content::ContentItem,
     traits::{HasContent, IsAvailable},
 };
@@ -45,11 +45,8 @@ async fn process(cr: &CommentsResult) -> Result<()> {
         .data
         .iter()
         .filter(|c| !c.not_available())
-        .flat_map(|c| {
-            let mut items = c.extract_content();
-            modify_text_content(&mut items, &c.author.name, c.created_at);
-            items
-        })
+        .flat_map(|c| collect_items_from_comment(c, 0))
+        .rev()
         .collect();
 
     content_items_handler::process_content_items(
@@ -63,7 +60,8 @@ async fn process(cr: &CommentsResult) -> Result<()> {
     Ok(())
 }
 
-fn modify_text_content(items: &mut Vec<ContentItem>, author: &str, created_at: u64) {
+fn modify_text_content(items: &mut Vec<ContentItem>, author: &str, created_at: u64, level: u8) {
+    let indent = "↳".repeat(level.into());
     for item in items {
         match item {
             ContentItem::Text {
@@ -78,11 +76,25 @@ fn modify_text_content(items: &mut Vec<ContentItem>, author: &str, created_at: u
 
                 let date_str = datetime.format("%Y.%m.%d %H:%M").to_string();
                 let insert_pos = 2;
-                content.insert_str(insert_pos, &format!("[{date_str}][{author}] "));
+                content.insert_str(insert_pos, &format!("{indent}[{date_str}][{author}] "));
             }
             _ => {}
         }
     }
+}
+
+fn collect_items_from_comment(comment: &Comment, level: u8) -> Vec<ContentItem> {
+    let mut items = comment.extract_content();
+    modify_text_content(&mut items, &comment.author.name, comment.created_at, level);
+
+    if let Some(replies) = &comment.replies {
+        for reply_group in replies.data.iter() {
+            let reply_items = collect_items_from_comment(reply_group, level + 1);
+            items.extend(reply_items);
+        }
+    }
+
+    items
 }
 
 fn check_available_comments(comments: &CommentsResponse, post_title: &str) -> bool {

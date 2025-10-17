@@ -105,8 +105,8 @@ async fn process_boosty_url(client: &ApiClient, posts_limit: usize, input: &str)
         }
     };
 
-    let reply_limit = Some(2);
-    let limit = Some(50);
+    let reply_limit = Some(10);
+    let limit = Some(300);
     let order = Some("top");
 
     let mut comments_results = Vec::new();
