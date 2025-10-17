@@ -2,7 +2,7 @@ use crate::file_handler::normalize_md_file;
 use crate::{cli, content_items_handler, file_handler};
 use anyhow::{Context, Result};
 use boosty_api::api_response::Post;
-use boosty_api::traits::{HasContent, HasTitle};
+use boosty_api::traits::{HasContent, HasTitle, IsAvailable};
 use std::path::PathBuf;
 
 pub enum PostsResult {
@@ -57,7 +57,7 @@ async fn process(post: &Post) -> Result<()> {
 }
 
 fn check_available_post(post: &Post) -> bool {
-    if !post.has_access || post.data.is_empty() {
+    if post.not_available() {
         cli::post_not_available_or_without_content(&post.safe_title());
         false
     } else {
