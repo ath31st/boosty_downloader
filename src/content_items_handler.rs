@@ -6,7 +6,7 @@ use std::path::Path;
 pub async fn process_content_items(
     items: Vec<ContentItem>,
     post_title: &str,
-    post_folder: &Path,
+    folder_path: &Path,
     signed_query: Option<&str>,
 ) -> Result<()> {
     let mut stack = items;
@@ -16,7 +16,7 @@ pub async fn process_content_items(
             ContentItem::Image { url, id } => {
                 let image_name = format!("{id}.jpg");
                 let download_res =
-                    file_handler::download_file_content(post_folder, &url, &image_name, None)
+                    file_handler::download_file_content(folder_path, &url, &image_name, None)
                         .await
                         .with_context(|| {
                             format!("Failed to download image '{id}' for post '{post_title}'")
@@ -25,7 +25,7 @@ pub async fn process_content_items(
             }
             ContentItem::Video { url } => {
                 let download_res =
-                    file_handler::download_text_content(post_folder, post_title, &url, None)
+                    file_handler::download_text_content(folder_path, post_title, &url, None)
                         .await
                         .with_context(|| {
                             format!("Failed to download video url '{url}' for post '{post_title}'")
@@ -35,7 +35,7 @@ pub async fn process_content_items(
             ContentItem::OkVideo { url, title, vid } => {
                 let title_with_vid = format!("{title}({vid})");
                 let download_res = file_handler::download_file_content(
-                    post_folder,
+                    folder_path,
                     &url,
                     &title_with_vid,
                     None,
@@ -48,7 +48,7 @@ pub async fn process_content_items(
             }
             ContentItem::Audio { url, title, .. } | ContentItem::File { url, title, .. } => {
                 let download_res =
-                    file_handler::download_file_content(post_folder, &url, &title, signed_query)
+                    file_handler::download_file_content(folder_path, &url, &title, signed_query)
                         .await
                         .with_context(|| {
                             format!("Failed to download file '{title}' for post '{post_title}'")
@@ -61,7 +61,7 @@ pub async fn process_content_items(
             } => {
                 if let Some(parsed) = parser::parse_text_content(&content, &modificator) {
                     let download_res = file_handler::download_text_content(
-                        post_folder,
+                        folder_path,
                         post_title,
                         &parsed,
                         Some(&modificator),
@@ -76,7 +76,7 @@ pub async fn process_content_items(
             ContentItem::Link { content, url, .. } => {
                 if let Some(parsed) = parser::parse_link_content(&content, &url) {
                     let download_res =
-                        file_handler::download_text_content(post_folder, post_title, &parsed, None)
+                        file_handler::download_text_content(folder_path, post_title, &parsed, None)
                             .await
                             .with_context(|| {
                                 format!("Failed to download link '{url}' for post '{post_title}'")
