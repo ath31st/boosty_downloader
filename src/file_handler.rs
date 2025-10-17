@@ -126,13 +126,13 @@ pub async fn download_text_content(
 }
 
 pub async fn download_file_content(
-    post_folder: &Path,
+    folder_path: &Path,
     url: &str,
     title: &str,
     signed_query: Option<&str>,
 ) -> Result<DownloadResult> {
     for attempt in 1..=MAX_RETRIES {
-        match download_file_once(post_folder, url, title, signed_query).await {
+        match download_file_once(folder_path, url, title, signed_query).await {
             Ok(r @ DownloadResult::Success) => return Ok(r),
             Ok(r @ DownloadResult::Skipped) => return Ok(r),
             Ok(_r @ DownloadResult::Error(_)) if attempt < MAX_RETRIES => {
@@ -145,7 +145,7 @@ pub async fn download_file_content(
         }
 
         let safe_name = sanitize_name(title);
-        let output_path = post_folder.join(safe_name);
+        let output_path = folder_path.join(safe_name);
         let _ = fs::remove_file(&output_path).await;
 
         tokio::time::sleep(Duration::from_secs(2_u64.pow(attempt as u32))).await;
@@ -154,13 +154,13 @@ pub async fn download_file_content(
 }
 
 pub async fn download_file_once(
-    post_folder: &Path,
+    folder_path: &Path,
     url: &str,
     title: &str,
     signed_query: Option<&str>,
 ) -> Result<DownloadResult> {
     let safe_name = sanitize_name(title);
-    let output_path = post_folder.join(safe_name);
+    let output_path = folder_path.join(safe_name);
 
     let exists = fs::try_exists(&output_path).await.with_context(|| {
         format!(
@@ -262,12 +262,12 @@ pub async fn normalize_md_file(post_folder: &Path, title: &str) -> Result<()> {
 pub async fn prepare_folder_path(
     blog_name: &str,
     post_title: &str,
-    post_created_at: i64,
+    created_at: i64,
 ) -> Result<PathBuf> {
     let safe_post_title = sanitize_name(post_title);
 
-    let datetime: DateTime<Utc> = DateTime::from_timestamp(post_created_at, 0)
-        .context("Invalid timestamp in post_created_at")?;
+    let datetime: DateTime<Utc> =
+        DateTime::from_timestamp(created_at, 0).context("Invalid timestamp in post_created_at")?;
 
     let date_str = datetime.format("%Y.%m.%d").to_string();
     let folder_name = format!("{date_str} {safe_post_title}");
