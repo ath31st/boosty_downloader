@@ -144,10 +144,6 @@ pub fn comments_for_post_empty_or_not_available(post_title: &str) {
     ));
 }
 
-pub fn comments_saved_for_post(post_title: &str) {
-    info(&format!("Comments saved for post '{post_title}'"));
-}
-
 pub fn print_error(e: &Error) {
     if cfg!(debug_assertions) {
         for cause in e.chain() {
