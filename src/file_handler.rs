@@ -104,18 +104,13 @@ pub async fn download_text_content(
         return Ok(DownloadResult::Success);
     }
 
-    let trimmed = content.trim();
-    if trimmed.is_empty() {
-        return Ok(DownloadResult::Skipped);
-    }
-
     let existing = load_existing_hashes(&hashes_path).await?;
-    let hash = hash_str(trimmed);
+    let hash = hash_str(content);
     if existing.contains(&hash) {
         return Ok(DownloadResult::Skipped);
     }
 
-    file.write_all(trimmed.as_bytes())
+    file.write_all(content.as_bytes())
         .await
         .with_context(|| format!("Failed to write to file '{}'", output_path.display()))?;
     file.write_all(b"\n").await?;

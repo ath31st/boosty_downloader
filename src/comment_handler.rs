@@ -46,7 +46,6 @@ async fn process(cr: &CommentsResult) -> Result<()> {
         .iter()
         .filter(|c| !c.not_available())
         .flat_map(|c| collect_items_from_comment(c, 0))
-        .rev()
         .collect();
 
     content_items_handler::process_content_items(

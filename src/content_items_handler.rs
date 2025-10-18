@@ -9,7 +9,7 @@ pub async fn process_content_items(
     folder_path: &Path,
     signed_query: Option<&str>,
 ) -> Result<()> {
-    let mut stack = items;
+    let mut stack = items.into_iter().rev().collect::<Vec<_>>();
 
     while let Some(item) = stack.pop() {
         match item {
@@ -29,7 +29,7 @@ pub async fn process_content_items(
                     .to_string_lossy()
                     .replace('\\', "/");
 
-                let image_markdown = format!("![{id}]({rel})");
+                let image_markdown = format!("![{id}]({rel})\n");
 
                 let download_res = file_handler::download_text_content(
                     folder_path,
