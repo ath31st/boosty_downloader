@@ -1,4 +1,3 @@
-use crate::file_handler::normalize_md_file;
 use crate::{cli, content_items_handler, file_handler};
 use anyhow::{Context, Result};
 use boosty_api::api_response::Post;
@@ -49,7 +48,7 @@ async fn process(post: &Post) -> Result<()> {
     )
     .await?;
 
-    normalize_md_file(&post_folder_path, post_title)
+    file_handler::normalize_md_file(&post_folder_path, post_title)
         .await
         .with_context(|| format!("Failed to normalize '{post_title}.md'"))?;
 

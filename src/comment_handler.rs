@@ -34,8 +34,10 @@ async fn process(cr: &CommentsResult) -> Result<()> {
         return Ok(());
     }
 
+    let post_title = &cr.safe_post_title;
+
     let post_folder_path: PathBuf =
-        file_handler::prepare_folder_path(&cr.blog_url, &cr.safe_post_title, cr.created_at).await?;
+        file_handler::prepare_folder_path(&cr.blog_url, post_title, cr.created_at).await?;
 
     let comments_folder_path: PathBuf =
         file_handler::prepare_folder_path_for_comments(&post_folder_path).await?;
@@ -48,13 +50,12 @@ async fn process(cr: &CommentsResult) -> Result<()> {
         .flat_map(|c| collect_items_from_comment(c, 0))
         .collect();
 
-    content_items_handler::process_content_items(
-        items,
-        &cr.safe_post_title,
-        &comments_folder_path,
-        None,
-    )
-    .await?;
+    content_items_handler::process_content_items(items, post_title, &comments_folder_path, None)
+        .await?;
+
+    file_handler::normalize_md_file(&post_folder_path, post_title)
+        .await
+        .with_context(|| format!("Failed to normalize '{post_title}.md'"))?;
 
     Ok(())
 }
