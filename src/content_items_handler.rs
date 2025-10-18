@@ -15,12 +15,33 @@ pub async fn process_content_items(
         match item {
             ContentItem::Image { url, id } => {
                 let image_name = format!("{id}.jpg");
-                let download_res =
-                    file_handler::download_file_content(folder_path, &url, &image_name, None)
-                        .await
-                        .with_context(|| {
-                            format!("Failed to download image '{id}' for post '{post_title}'")
-                        })?;
+
+                file_handler::download_file_content(folder_path, &url, &image_name, None)
+                    .await
+                    .with_context(|| {
+                        format!("Failed to download image '{id}' for post '{post_title}'")
+                    })?;
+
+                let full_image_path = folder_path.join(&image_name);
+                let rel = full_image_path
+                    .strip_prefix(folder_path)
+                    .unwrap_or(&full_image_path)
+                    .to_string_lossy()
+                    .replace('\\', "/");
+
+                let image_markdown = format!("![{id}]({rel})");
+
+                let download_res = file_handler::download_text_content(
+                    folder_path,
+                    post_title,
+                    &image_markdown,
+                    None,
+                )
+                .await
+                .with_context(|| {
+                    format!("Failed to add image markdown for '{id}' in post '{post_title}'")
+                })?;
+
                 cli::show_download_result(download_res, &id, post_title);
             }
             ContentItem::Video { url } => {
@@ -99,7 +120,7 @@ pub async fn process_content_items(
                 )
                 .await
                 .with_context(|| {
-                    format!("Failed to download smile '{name}' for post '{post_title}'")
+                    format!("Failed to add smile markdown '{name}' for post '{post_title}'")
                 })?;
                 cli::show_download_result(download_res, &name, post_title);
             }
