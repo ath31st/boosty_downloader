@@ -73,6 +73,36 @@ pub async fn process_content_items(
                     cli::show_download_result(download_res, post_title, post_title);
                 }
             }
+            ContentItem::Smile {
+                small_url, name, ..
+            } => {
+                let image_name = format!("{name}.png");
+                file_handler::download_file_content(folder_path, &small_url, &image_name, None)
+                    .await
+                    .with_context(|| {
+                        format!("Failed to download smile '{name}' for post '{post_title}'")
+                    })?;
+
+                let full_image_path = folder_path.join(&image_name);
+                let rel = full_image_path
+                    .strip_prefix(folder_path)
+                    .unwrap_or(&full_image_path)
+                    .to_string_lossy()
+                    .replace('\\', "/");
+
+                let smile_content = format!("![{name}]({rel})");
+                let download_res = file_handler::download_text_content(
+                    folder_path,
+                    post_title,
+                    &smile_content,
+                    None,
+                )
+                .await
+                .with_context(|| {
+                    format!("Failed to download smile '{name}' for post '{post_title}'")
+                })?;
+                cli::show_download_result(download_res, &name, post_title);
+            }
             ContentItem::Link { content, url, .. } => {
                 if let Some(parsed) = parser::parse_link_content(&content, &url) {
                     let download_res =
