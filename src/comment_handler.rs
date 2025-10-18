@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use anyhow::{Context, Result};
 use boosty_api::{
@@ -19,28 +19,39 @@ pub struct CommentsResult {
 
 pub async fn process_comments(results: Vec<CommentsResult>) -> Result<()> {
     for result in results {
-        process(&result).await.with_context(|| {
-            format!(
-                "Error processing comments for post '{}'",
-                result.safe_post_title
-            )
-        })?;
+        let post_title = &result.safe_post_title;
+
+        let post_folder_path: PathBuf =
+            file_handler::prepare_folder_path(&result.blog_url, post_title, result.created_at)
+                .await?;
+
+        let comments_folder_path: PathBuf =
+            file_handler::prepare_folder_path_for_comments(&post_folder_path).await?;
+
+        process(&result, &comments_folder_path, post_title)
+            .await
+            .with_context(|| {
+                format!(
+                    "Error processing comments for post '{}'",
+                    result.safe_post_title
+                )
+            })?;
+
+        file_handler::normalize_md_file(&comments_folder_path, post_title)
+            .await
+            .with_context(|| format!("Failed to normalize '{post_title}.md' for comments"))?;
+
+        file_handler::convert_markdown_file_to_html(&comments_folder_path, post_title)
+            .await
+            .with_context(|| format!("Failed to convert '{post_title}.md' to HTML"))?;
     }
     Ok(())
 }
 
-async fn process(cr: &CommentsResult) -> Result<()> {
+async fn process(cr: &CommentsResult, comments_folder_path: &Path, post_title: &str) -> Result<()> {
     if !check_available_comments(&cr.response, &cr.safe_post_title) {
         return Ok(());
     }
-
-    let post_title = &cr.safe_post_title;
-
-    let post_folder_path: PathBuf =
-        file_handler::prepare_folder_path(&cr.blog_url, post_title, cr.created_at).await?;
-
-    let comments_folder_path: PathBuf =
-        file_handler::prepare_folder_path_for_comments(&post_folder_path).await?;
 
     let items: Vec<ContentItem> = cr
         .response
@@ -50,12 +61,8 @@ async fn process(cr: &CommentsResult) -> Result<()> {
         .flat_map(|c| collect_items_from_comment(c, 0))
         .collect();
 
-    content_items_handler::process_content_items(items, post_title, &comments_folder_path, None)
+    content_items_handler::process_content_items(items, post_title, comments_folder_path, None)
         .await?;
-
-    file_handler::normalize_md_file(&post_folder_path, post_title)
-        .await
-        .with_context(|| format!("Failed to normalize '{post_title}.md'"))?;
 
     Ok(())
 }

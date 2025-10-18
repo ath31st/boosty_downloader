@@ -52,6 +52,10 @@ async fn process(post: &Post) -> Result<()> {
         .await
         .with_context(|| format!("Failed to normalize '{post_title}.md'"))?;
 
+    file_handler::convert_markdown_file_to_html(&post_folder_path, post_title)
+        .await
+        .with_context(|| format!("Failed to convert '{post_title}.md' to HTML"))?;
+
     Ok(())
 }
 
