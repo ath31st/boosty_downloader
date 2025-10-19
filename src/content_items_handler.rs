@@ -54,7 +54,7 @@ pub async fn process_content_items(
                 cli::show_download_result(download_res, post_title, post_title);
             }
             ContentItem::OkVideo { url, title, vid } => {
-                let title_with_vid = format!("{title}({vid})");
+                let title_with_vid = format!("{title}({vid}).mp4");
                 let download_res = file_handler::download_file_content(
                     folder_path,
                     &url,
