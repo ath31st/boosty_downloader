@@ -89,7 +89,7 @@ pub async fn download_text_content(
 ) -> Result<DownloadResult> {
     let safe_name = sanitize_name(post_title);
     let output_path = folder_path.join(format!("{safe_name}.md"));
-    let hashes_path = folder_path.join(format!("{safe_name}.hashes"));
+    let hashes_path = folder_path.join(".hashes");
 
     let mut file = fs::OpenOptions::new()
         .create(true)
