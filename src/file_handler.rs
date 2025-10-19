@@ -291,8 +291,11 @@ pub async fn prepare_folder_path_for_comments(post_folder_path: &Path) -> Result
     Ok(comments_folder_path)
 }
 
-pub async fn convert_markdown_file_to_html(folder_path: &Path, title: &str) -> Result<PathBuf> {
+pub async fn convert_markdown_file_to_html(folder_path: &Path, title: &str) -> Result<()> {
     let md_path = folder_path.join(format!("{}.md", sanitize_name(title)));
+    if !fs::try_exists(&md_path).await? {
+        return Ok(());
+    }
 
     let content = fs::read_to_string(md_path.clone()).await?;
     let html = markdown::to_html(&content);
@@ -302,7 +305,7 @@ pub async fn convert_markdown_file_to_html(folder_path: &Path, title: &str) -> R
         .await
         .with_context(|| format!("Failed to write HTML file '{}'", html_path.display()))?;
 
-    Ok(html_path)
+    Ok(())
 }
 
 pub fn sanitize_name(name: &str) -> String {

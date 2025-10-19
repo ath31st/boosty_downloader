@@ -18,6 +18,10 @@ pub struct CommentsResult {
 }
 
 pub async fn process_comments(results: Vec<CommentsResult>) -> Result<()> {
+    if results.is_empty() {
+        return Ok(());
+    }
+
     for result in results {
         let post_title = &result.safe_post_title;
 
