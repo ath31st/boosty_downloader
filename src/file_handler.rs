@@ -3,6 +3,7 @@ use anyhow::{Context, Result};
 use chrono::{DateTime, Utc};
 use futures_util::StreamExt;
 use indicatif::{ProgressBar, ProgressStyle};
+use markdown::{CompileOptions, Options, ParseOptions};
 use sha2::{Digest, Sha256};
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
@@ -120,7 +121,7 @@ pub async fn download_text_content(
     Ok(DownloadResult::Success)
 }
 
-pub async fn download_file_content(
+async fn download_file_content(
     folder_path: &Path,
     url: &str,
     title: &str,
@@ -291,17 +292,61 @@ pub async fn prepare_folder_path_for_comments(post_folder_path: &Path) -> Result
     Ok(comments_folder_path)
 }
 
+pub async fn process_file_and_markdown(
+    folder_path: &Path,
+    url: &str,
+    file_name: &str,
+    markdown_content: &str,
+    post_title: &str,
+    signed_query: Option<&str>,
+) -> Result<DownloadResult> {
+    download_file_content(folder_path, url, file_name, signed_query)
+        .await
+        .with_context(|| {
+            format!("Failed to download file '{file_name}' for post '{post_title}'")
+        })?;
+
+    let full_path = folder_path.join(file_name);
+    let rel = full_path
+        .strip_prefix(folder_path)
+        .unwrap_or(&full_path)
+        .to_string_lossy()
+        .replace('\\', "/");
+
+    let markdown = markdown_content.replace("{rel}", &rel);
+
+    let download_res = download_text_content(folder_path, post_title, &markdown, None)
+        .await
+        .with_context(|| {
+            format!("Failed to add markdown for '{file_name}' in post '{post_title}'")
+        })?;
+
+    Ok(download_res)
+}
+
 pub async fn convert_markdown_file_to_html(folder_path: &Path, title: &str) -> Result<()> {
     let md_path = folder_path.join(format!("{}.md", sanitize_name(title)));
     if !fs::try_exists(&md_path).await? {
         return Ok(());
     }
 
+    let opts = Options {
+        parse: ParseOptions::default(),
+        compile: CompileOptions {
+            allow_dangerous_html: true,
+            ..CompileOptions::default()
+        },
+    };
+
     let content = fs::read_to_string(md_path.clone()).await?;
-    let html = markdown::to_html(&content);
+    let html_content = markdown::to_html_with_options(&content, &opts)
+        .map_err(|e| anyhow::Error::msg(format!("Failed to convert Markdown to HTML: {e}")))?;
+
+    let template = include_str!("../templates/template.html");
+    let styled_html = template.replace("{content}", &html_content);
 
     let html_path = md_path.with_extension("html");
-    fs::write(&html_path, html)
+    fs::write(&html_path, &styled_html)
         .await
         .with_context(|| format!("Failed to write HTML file '{}'", html_path.display()))?;
 
