@@ -2,7 +2,7 @@ use std::path::{Path, PathBuf};
 
 use anyhow::{Context, Result};
 use boosty_api::{
-    api_response::{Comment, CommentsResponse},
+    api_response::Comment,
     media_content::ContentItem,
     traits::{HasContent, IsAvailable},
 };
@@ -11,7 +11,7 @@ use chrono::{DateTime, Utc};
 use crate::{cli, content_items_handler, file_handler};
 
 pub struct CommentsResult {
-    pub response: CommentsResponse,
+    pub comments: Vec<Comment>,
     pub blog_url: String,
     pub safe_post_title: String,
     pub created_at: i64,
@@ -53,13 +53,12 @@ pub async fn process_comments(results: Vec<CommentsResult>) -> Result<()> {
 }
 
 async fn process(cr: &CommentsResult, comments_folder_path: &Path, post_title: &str) -> Result<()> {
-    if !check_available_comments(&cr.response, &cr.safe_post_title) {
+    if !check_available_comments(&cr.comments, &cr.safe_post_title) {
         return Ok(());
     }
 
     let items: Vec<ContentItem> = cr
-        .response
-        .data
+        .comments
         .iter()
         .filter(|c| !c.not_available())
         .flat_map(|c| collect_items_from_comment(c, 0))
@@ -108,8 +107,8 @@ fn collect_items_from_comment(comment: &Comment, level: u8) -> Vec<ContentItem> 
     items
 }
 
-fn check_available_comments(comments: &CommentsResponse, post_title: &str) -> bool {
-    if comments.data.is_empty() || comments.data.iter().all(|c| c.not_available()) {
+fn check_available_comments(comments: &[Comment], post_title: &str) -> bool {
+    if comments.is_empty() || comments.iter().all(|c| c.not_available()) {
         cli::comments_for_post_empty_or_not_available(post_title);
         return false;
     }

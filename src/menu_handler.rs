@@ -110,8 +110,8 @@ async fn process_boosty_url(client: &ApiClient, cfg: &AppConfig, input: &str) ->
 
     match &result {
         post_handler::PostsResult::Single(post) => {
-            let comments_response = client
-                .get_comments(
+            let comments = client
+                .get_all_comments(
                     &post.user.blog_url,
                     &post.id,
                     cfg.comments.limit,
@@ -122,7 +122,7 @@ async fn process_boosty_url(client: &ApiClient, cfg: &AppConfig, input: &str) ->
                 .with_context(|| format!("Failed to fetch comments for post '{}'", post.id))?;
 
             comments_results.push(comment_handler::CommentsResult {
-                response: comments_response,
+                comments,
                 safe_post_title: post.safe_title(),
                 created_at: post.created_at,
                 blog_url: post.user.blog_url.clone(),
@@ -131,8 +131,8 @@ async fn process_boosty_url(client: &ApiClient, cfg: &AppConfig, input: &str) ->
 
         post_handler::PostsResult::Multiple(posts) if !posts.is_empty() => {
             for post in posts {
-                let comments_response = client
-                    .get_comments(
+                let comments = client
+                    .get_all_comments(
                         &post.user.blog_url,
                         &post.id,
                         cfg.comments.limit,
@@ -143,7 +143,7 @@ async fn process_boosty_url(client: &ApiClient, cfg: &AppConfig, input: &str) ->
                     .with_context(|| format!("Failed to fetch comments for post '{}'", post.id))?;
 
                 comments_results.push(comment_handler::CommentsResult {
-                    response: comments_response,
+                    comments,
                     safe_post_title: post.safe_title(),
                     created_at: post.created_at,
                     blog_url: post.user.blog_url.clone(),

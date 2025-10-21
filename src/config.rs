@@ -31,7 +31,8 @@ impl Default for AppConfig {
             comments: CommentsConfig {
                 reply_limit: Some(10),
                 limit: Some(300),
-                order: Some("top".to_string()),
+                // top or bottom
+                order: Some("bottom".to_string()),
             },
         }
     }
