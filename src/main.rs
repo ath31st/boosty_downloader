@@ -38,31 +38,12 @@ async fn run() -> Result<()> {
     let client = ApiClient::new(client, API_URL);
     checks::check_api(&client).await?;
 
-    apply_config(&client).await?;
+    config::apply_config(&client).await?;
 
     loop {
         if !handle_menu(&client).await? {
             break;
         }
     }
-    Ok(())
-}
-
-async fn apply_config(client: &ApiClient) -> Result<()> {
-    let cfg = config::load_config().await?;
-
-    if !cfg.access_token.is_empty() {
-        client.set_bearer_token(&cfg.access_token).await?;
-        cli::access_token_set(&cfg.access_token);
-    }
-
-    if !cfg.refresh_token.is_empty() && !cfg.device_id.is_empty() {
-        client
-            .set_refresh_token_and_device_id(&cfg.refresh_token, &cfg.device_id)
-            .await?;
-        cli::refresh_token_set(&cfg.refresh_token);
-        cli::client_id_set(&cfg.device_id);
-    }
-
     Ok(())
 }

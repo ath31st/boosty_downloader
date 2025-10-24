@@ -1,4 +1,5 @@
 use anyhow::{Context, Result};
+use boosty_api::api_client::ApiClient;
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 use tokio::fs;
@@ -103,4 +104,23 @@ where
     save_config(&cfg).await?;
 
     Ok(cfg)
+}
+
+pub async fn apply_config(client: &ApiClient) -> Result<()> {
+    let cfg = load_config().await?;
+
+    if !cfg.access_token.is_empty() {
+        client.set_bearer_token(&cfg.access_token).await?;
+        cli::access_token_set(&cfg.access_token);
+    }
+
+    if !cfg.refresh_token.is_empty() && !cfg.device_id.is_empty() {
+        client
+            .set_refresh_token_and_device_id(&cfg.refresh_token, &cfg.device_id)
+            .await?;
+        cli::refresh_token_set(&cfg.refresh_token);
+        cli::client_id_set(&cfg.device_id);
+    }
+
+    Ok(())
 }
