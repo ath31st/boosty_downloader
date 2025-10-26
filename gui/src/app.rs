@@ -80,49 +80,32 @@ impl App {
             }
             Message::ConfigPostsLimitChanged(value) => {
                 self.config_input.posts_limit = value;
-                Task::none()
+                self.save_config_task()
             }
             Message::ConfigAccessTokenChanged(value) => {
                 self.config_input.access_token = value;
-                Task::none()
+                self.save_config_task()
             }
             Message::ConfigRefreshTokenChanged(value) => {
                 self.config_input.refresh_token = value;
-                Task::none()
+                self.save_config_task()
             }
             Message::ConfigDeviceIdChanged(value) => {
                 self.config_input.device_id = value;
-                Task::none()
+                self.save_config_task()
             }
             Message::ConfigReplyLimitChanged(value) => {
                 self.config_input.reply_limit = value;
-                Task::none()
+                self.save_config_task()
             }
             Message::ConfigLimitChanged(value) => {
                 self.config_input.limit = value;
-                Task::none()
+                self.save_config_task()
             }
             Message::ConfigOrderChanged(value) => {
                 self.config_input.order = value;
-                Task::none()
+                self.save_config_task()
             }
-            Message::SaveConfig => match self.config_input.to_config() {
-                Ok(config) => {
-                    self.config = config.clone();
-                    Task::perform(
-                        async move {
-                            boosty_downloader_core::config::save_config(&config)
-                                .await
-                                .map_err(|e| format!("Failed to save config: {e}"))
-                        },
-                        Message::ConfigSaved,
-                    )
-                }
-                Err(e) => {
-                    self.status = format!("Invalid config: {}", e);
-                    Task::none()
-                }
-            },
             Message::ConfigSaved(result) => {
                 match result {
                     Ok(_) => self.status = "Config saved".to_string(),
@@ -157,5 +140,26 @@ impl App {
 
     pub fn theme(_state: &App) -> Theme {
         Theme::TokyoNight
+    }
+
+    fn save_config_task(&mut self) -> Task<Message> {
+        match self.config_input.to_config() {
+            Ok(config) => {
+                self.config = config.clone();
+                let config_clone = config.clone();
+                Task::perform(
+                    async move {
+                        boosty_downloader_core::config::save_config(&config_clone)
+                            .await
+                            .map_err(|e| format!("Failed to save config: {e}"))
+                    },
+                    Message::ConfigSaved,
+                )
+            }
+            Err(e) => {
+                println!("Invalid config: {}", e);
+                Task::none()
+            }
+        }
     }
 }

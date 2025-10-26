@@ -15,6 +15,5 @@ pub enum Message {
     ConfigReplyLimitChanged(String),
     ConfigLimitChanged(String),
     ConfigOrderChanged(String),
-    SaveConfig,
     ConfigSaved(Result<(), String>),
 }

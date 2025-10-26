@@ -1,6 +1,6 @@
 use iced::{
     Element,
-    widget::{button, column, text, text_input},
+    widget::{column, text, text_input},
 };
 
 use crate::{config_input_handler::ConfigInput, messages::Message};
@@ -23,7 +23,6 @@ pub fn config_screen_view(config: &ConfigInput) -> Element<'_, Message> {
         text_input("Limit", &config.limit).on_input(Message::ConfigLimitChanged),
         text("Comments Order (top/bottom):"),
         text_input("Order", &config.order).on_input(Message::ConfigOrderChanged),
-        button("Save Config").on_press(Message::SaveConfig),
     ]
     .spacing(5)
     .into()
