@@ -342,7 +342,7 @@ pub async fn convert_markdown_file_to_html(folder_path: &Path, title: &str) -> R
     let html_content = markdown::to_html_with_options(&content, &opts)
         .map_err(|e| anyhow::Error::msg(format!("Failed to convert Markdown to HTML: {e}")))?;
 
-    let template = include_str!("../templates/template.html");
+    let template = include_str!("../../templates/template.html");
     let styled_html = template.replace("{content}", &html_content);
 
     let html_path = md_path.with_extension("html");
