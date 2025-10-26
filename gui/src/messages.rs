@@ -3,7 +3,7 @@ use boosty_downloader_core::config::AppConfig;
 
 #[derive(Debug, Clone)]
 pub enum Message {
-    ClientInitialized(Result<(ApiClient, AppConfig), String>),
+    ClientInitialized(Box<Result<(ApiClient, AppConfig), String>>),
     SwitchToMain,
     SwitchToConfig,
     UrlInputChanged(String),

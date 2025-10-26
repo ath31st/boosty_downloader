@@ -3,28 +3,26 @@ use iced::{
     widget::{button, column, text, text_input},
 };
 
-use crate::{app::App, messages::Message};
+use crate::{config_input_handler::ConfigInput, messages::Message};
 
-pub fn config_screen_view(app: &'_ App) -> Element<'_, Message> {
+pub fn config_screen_view(config: &ConfigInput) -> Element<'_, Message> {
     column![
         text("Posts Limit:"),
-        text_input("Posts Limit", &app.config_posts_limit)
-            .on_input(Message::ConfigPostsLimitChanged),
+        text_input("Posts Limit", &config.posts_limit).on_input(Message::ConfigPostsLimitChanged),
         text("Access Token:"),
-        text_input("Access Token", &app.config_access_token)
+        text_input("Access Token", &config.access_token)
             .on_input(Message::ConfigAccessTokenChanged),
         text("Refresh Token:"),
-        text_input("Refresh Token", &app.config_refresh_token)
+        text_input("Refresh Token", &config.refresh_token)
             .on_input(Message::ConfigRefreshTokenChanged),
         text("Device ID:"),
-        text_input("Device ID", &app.config_device_id).on_input(Message::ConfigDeviceIdChanged),
+        text_input("Device ID", &config.device_id).on_input(Message::ConfigDeviceIdChanged),
         text("Comments Reply Limit:"),
-        text_input("Reply Limit", &app.config_reply_limit)
-            .on_input(Message::ConfigReplyLimitChanged),
+        text_input("Reply Limit", &config.reply_limit).on_input(Message::ConfigReplyLimitChanged),
         text("Comments Limit:"),
-        text_input("Limit", &app.config_limit).on_input(Message::ConfigLimitChanged),
+        text_input("Limit", &config.limit).on_input(Message::ConfigLimitChanged),
         text("Comments Order (top/bottom):"),
-        text_input("Order", &app.config_order).on_input(Message::ConfigOrderChanged),
+        text_input("Order", &config.order).on_input(Message::ConfigOrderChanged),
         button("Save Config").on_press(Message::SaveConfig),
     ]
     .spacing(5)
