@@ -1,3 +1,5 @@
+#![cfg_attr(target_os = "windows", windows_subsystem = "windows")]
+
 use iced::{Settings, Size};
 
 use crate::app::App;
