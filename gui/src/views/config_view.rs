@@ -3,9 +3,9 @@ use iced::{
     widget::{column, text, text_input},
 };
 
-use crate::{config_input_handler::ConfigInput, messages::Message};
+use crate::{config_form::ConfigInput, messages::Message};
 
-pub fn config_screen_view(config: &ConfigInput) -> Element<'_, Message> {
+pub fn config_view(config: &ConfigInput) -> Element<'_, Message> {
     column![
         text("Posts Limit:"),
         text_input("Posts Limit", &config.posts_limit).on_input(Message::ConfigPostsLimitChanged),

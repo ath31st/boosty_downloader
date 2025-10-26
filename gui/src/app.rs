@@ -3,9 +3,9 @@ use boosty_downloader_core::config::AppConfig;
 use iced::widget::{button, column, row, text};
 use iced::{Element, Task, Theme};
 
-use crate::config_input_handler::ConfigInput;
+use crate::config_form::ConfigInput;
 use crate::messages::Message;
-use crate::views::{config_screen_view, main_screen_view};
+use crate::views::{config_view, main_view};
 
 #[derive(Default)]
 pub struct App {
@@ -109,7 +109,7 @@ impl App {
             Message::ConfigSaved(result) => {
                 match result {
                     Ok(_) => self.status = "Config saved".to_string(),
-                    Err(e) => self.status = format!("Failed to save config: {}", e),
+                    Err(e) => self.status = format!("Failed to save config: {e}"),
                 }
                 Task::none()
             }
@@ -128,8 +128,8 @@ impl App {
         .spacing(10);
 
         let content = match self.current_screen {
-            Screen::Main => main_screen_view(&self.url_input),
-            Screen::Config => config_screen_view(&self.config_input),
+            Screen::Main => main_view(&self.url_input),
+            Screen::Config => config_view(&self.config_input),
         };
 
         column![navigation, text(&self.status), content]
