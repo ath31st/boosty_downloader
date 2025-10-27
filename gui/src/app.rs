@@ -146,10 +146,9 @@ impl App {
         match self.config_input.to_config() {
             Ok(config) => {
                 self.config = config.clone();
-                let config_clone = config.clone();
                 Task::perform(
                     async move {
-                        boosty_downloader_core::config::save_config(&config_clone)
+                        boosty_downloader_core::config::save_config(&config)
                             .await
                             .map_err(|e| format!("Failed to save config: {e}"))
                     },
