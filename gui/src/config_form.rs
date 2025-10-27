@@ -1,4 +1,4 @@
-use boosty_downloader_core::config::AppConfig;
+use boosty_downloader_core::AppConfig;
 
 #[derive(Default)]
 pub struct ConfigInput {
@@ -54,7 +54,7 @@ impl ConfigInput {
             access_token: self.access_token.clone(),
             refresh_token: self.refresh_token.clone(),
             device_id: self.device_id.clone(),
-            comments: boosty_downloader_core::config::CommentsConfig {
+            comments: boosty_downloader_core::CommentsConfig {
                 reply_limit: Some(reply_limit),
                 limit: Some(limit),
                 order: Some(self.order.clone()).filter(|s| !s.is_empty()),

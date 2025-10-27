@@ -1,13 +1,17 @@
-pub mod checks;
-pub mod cli;
-pub mod comment_handler;
-pub mod config;
-pub mod content_items_handler;
-pub mod file_handler;
-pub mod headers;
-pub mod menu_handler;
-pub mod parser;
-pub mod post_handler;
+pub(crate) mod checks;
+pub(crate) mod cli;
+pub(crate) mod comment_handler;
+pub(crate) mod config;
+pub(crate) mod content_items_handler;
+pub(crate) mod file_handler;
+pub(crate) mod headers;
+pub(crate) mod menu_handler;
+pub(crate) mod parser;
+pub(crate) mod post_handler;
+
+pub use cli::print_error;
+pub use config::{AppConfig, CommentsConfig, apply_config, load_config, save_config};
+pub use menu_handler::handle_menu;
 
 use anyhow::Result;
 use boosty_api::api_client::ApiClient;

@@ -1,5 +1,5 @@
 use boosty_api::api_client::ApiClient;
-use boosty_downloader_core::config::AppConfig;
+use boosty_downloader_core::AppConfig;
 use iced::widget::{button, column, row, text};
 use iced::{Element, Task, Theme};
 
@@ -34,7 +34,7 @@ impl App {
 
         let init_task = Task::perform(
             async {
-                let config = boosty_downloader_core::config::load_config()
+                let config = boosty_downloader_core::load_config()
                     .await
                     .map_err(|e| format!("Failed to load config: {e}"))?;
                 let client = boosty_downloader_core::make_client()
@@ -160,10 +160,10 @@ impl App {
 
         Task::perform(
             async move {
-                boosty_downloader_core::config::apply_config(&client)
+                boosty_downloader_core::apply_config(&client)
                     .await
                     .map_err(|e| format!("Failed to apply config: {e}"))?;
-                boosty_downloader_core::config::save_config(&config)
+                boosty_downloader_core::save_config(&config)
                     .await
                     .map_err(|e| format!("Failed to save config: {e}"))
             },

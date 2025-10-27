@@ -1,5 +1,5 @@
 use boosty_api::api_client::ApiClient;
-use boosty_downloader_core::config::AppConfig;
+use boosty_downloader_core::AppConfig;
 
 #[derive(Debug, Clone)]
 pub enum Message {
