@@ -143,22 +143,31 @@ impl App {
     }
 
     fn save_config_task(&mut self) -> Task<Message> {
-        match self.config_input.to_config() {
-            Ok(config) => {
-                self.config = config.clone();
-                Task::perform(
-                    async move {
-                        boosty_downloader_core::config::save_config(&config)
-                            .await
-                            .map_err(|e| format!("Failed to save config: {e}"))
-                    },
-                    Message::ConfigSaved,
-                )
-            }
+        let config = match self.config_input.to_config() {
+            Ok(cfg) => cfg,
             Err(e) => {
                 println!("Invalid config: {}", e);
-                Task::none()
+                return Task::none();
             }
-        }
+        };
+
+        self.config = config.clone();
+
+        let client = match self.client.as_ref() {
+            Some(c) => c.clone(),
+            None => return Task::none(),
+        };
+
+        Task::perform(
+            async move {
+                boosty_downloader_core::config::apply_config(&client)
+                    .await
+                    .map_err(|e| format!("Failed to apply config: {e}"))?;
+                boosty_downloader_core::config::save_config(&config)
+                    .await
+                    .map_err(|e| format!("Failed to save config: {e}"))
+            },
+            Message::ConfigSaved,
+        )
     }
 }
