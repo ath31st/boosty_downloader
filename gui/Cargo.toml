@@ -1,0 +1,11 @@
+[package]
+name = "boosty_downloader_gui"
+version = "0.2.0"
+edition = "2024"
+
+[dependencies]
+boosty_api = { path = "../../boosty_api" }
+boosty_downloader_core = { path = "../core" }
+iced = { version = "0.13", features = ["tokio"] }
+anyhow = "1.0"
+tokio = { version = "1", features = ["rt-multi-thread", "macros"] }

@@ -1,0 +1,26 @@
+[env]
+VERSION = { script = ["cargo pkgid | cut -d# -f2 | cut -d: -f2"] }
+
+[tasks.build-linux]
+script = [
+    "cargo build --target x86_64-unknown-linux-gnu --release",
+    "mv -f ../target/x86_64-unknown-linux-gnu/release/boosty_downloader ../target/x86_64-unknown-linux-gnu/release/boosty_downloader-${VERSION}-linux-x86_64"
+]
+
+[tasks.build-windows]
+script = [
+    "cargo build --target x86_64-pc-windows-gnu --release",
+    "mv -f ../target/x86_64-pc-windows-gnu/release/boosty_downloader.exe ../target/x86_64-pc-windows-gnu/release/boosty_downloader-${VERSION}-windows-x86_64.exe"
+]
+
+[tasks.build-macos-intel]
+script = [
+    "cargo build --target x86_64-apple-darwin --release",
+    "mv -f ../target/x86_64-apple-darwin/release/boosty_downloader ../target/x86_64-apple-darwin/release/boosty_downloader-${VERSION}-macos-x86_64"
+]
+
+[tasks.build-macos-apple]
+script = [
+    "cargo build --target aarch64-apple-darwin --release",
+    "mv -f ../target/aarch64-apple-darwin/release/boosty_downloader ../target/aarch64-apple-darwin/release/boosty_downloader-${VERSION}-macos-aarch64"
+]

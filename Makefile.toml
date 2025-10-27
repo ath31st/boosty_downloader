@@ -1,26 +1,35 @@
 [env]
 VERSION = { script = ["cargo pkgid | cut -d# -f2 | cut -d: -f2"] }
 
-[tasks.build-linux]
-script = [
-    "cargo build --target x86_64-unknown-linux-gnu --release",
-    "mv -f ../target/x86_64-unknown-linux-gnu/release/boosty_downloader ../target/x86_64-unknown-linux-gnu/release/boosty_downloader-${VERSION}-linux-x86_64"
-]
+# === CLI ===
+[tasks.build-cli-linux]
+script = ["cd core && cargo build --target x86_64-unknown-linux-gnu --release"]
 
-[tasks.build-windows]
-script = [
-    "cargo build --target x86_64-pc-windows-gnu --release",
-    "mv -f ../target/x86_64-pc-windows-gnu/release/boosty_downloader.exe ../target/x86_64-pc-windows-gnu/release/boosty_downloader-${VERSION}-windows-x86_64.exe"
-]
+[tasks.build-cli-windows]
+script = ["cd core && cargo build --target x86_64-pc-windows-gnu --release"]
 
-[tasks.build-macos-intel]
-script = [
-    "cargo build --target x86_64-apple-darwin --release",
-    "mv -f ../target/x86_64-apple-darwin/release/boosty_downloader ../target/x86_64-apple-darwin/release/boosty_downloader-${VERSION}-macos-x86_64"
-]
+[tasks.build-cli-macos-intel]
+script = ["cd core && cargo build --target x86_64-apple-darwin --release"]
 
-[tasks.build-macos-apple]
-script = [
-    "cargo build --target aarch64-apple-darwin --release",
-    "mv -f ../target/aarch64-apple-darwin/release/boosty_downloader ../target/aarch64-apple-darwin/release/boosty_downloader-${VERSION}-macos-aarch64"
-]
+[tasks.build-cli-macos-apple]
+script = ["cd core && cargo build --target aarch64-apple-darwin --release"]
+
+# === GUI ===
+[tasks.build-gui-linux]
+script = ["cd gui && cargo build --target x86_64-unknown-linux-gnu --release"]
+
+[tasks.build-gui-windows]
+script = ["cd gui && cargo build --target x86_64-pc-windows-gnu --release"]
+
+[tasks.build-gui-macos-intel]
+script = ["cd gui && cargo build --target x86_64-apple-darwin --release"]
+
+[tasks.build-gui-macos-apple]
+script = ["cd gui && cargo build --target aarch64-apple-darwin --release"]
+
+# === Convenience targets ===
+[tasks.build-cli]
+dependencies = ["build-cli-linux", "build-cli-windows"]
+
+[tasks.build-gui]
+dependencies = ["build-gui-linux", "build-gui-windows"]
