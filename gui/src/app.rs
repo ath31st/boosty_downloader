@@ -1,11 +1,11 @@
 use boosty_api::api_client::ApiClient;
 use boosty_downloader_core::AppConfig;
-use iced::widget::{button, column, row, text};
+use iced::widget::column;
 use iced::{Element, Task, Theme};
 
 use crate::config_form::ConfigInput;
 use crate::messages::Message;
-use crate::views::{config_view, main_view};
+use crate::views::{config_view, header_view, main_view};
 
 #[derive(Default)]
 pub struct App {
@@ -18,7 +18,7 @@ pub struct App {
 }
 
 #[derive(Default, PartialEq)]
-enum Screen {
+pub enum Screen {
     #[default]
     Main,
     Config,
@@ -121,21 +121,18 @@ impl App {
     }
 
     pub fn view(&'_ self) -> Element<'_, Message> {
-        let navigation = row![
-            button("Main").on_press(Message::SwitchToMain),
-            button("Config").on_press(Message::SwitchToConfig),
-        ]
-        .spacing(10);
-
         let content = match self.current_screen {
             Screen::Main => main_view(&self.url_input),
             Screen::Config => config_view(&self.config_input),
         };
 
-        column![navigation, text(&self.status), content]
-            .padding(20)
-            .spacing(10)
-            .into()
+        column![
+            header_view("Boosty Downloader", &self.status, &self.current_screen,),
+            content
+        ]
+        .padding(20)
+        .spacing(10)
+        .into()
     }
 
     pub fn theme(_state: &App) -> Theme {
@@ -146,7 +143,7 @@ impl App {
         let config = match self.config_input.to_config() {
             Ok(cfg) => cfg,
             Err(e) => {
-                println!("Invalid config: {}", e);
+                println!("Invalid config: {e}");
                 return Task::none();
             }
         };
