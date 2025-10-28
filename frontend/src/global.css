@@ -1,0 +1,43 @@
+@import "tailwindcss";
+
+:root {
+  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+[data-theme="dark"] {
+  --hue: 220;
+
+  --background: hsl(var(--hue), 30%, 10%);
+  --text: hsl(var(--hue), 35%, 90%);
+  --meta-text: hsl(var(--hue), 15%, 60%);
+  --button-bg: hsl(var(--hue), 25%, 20%);
+  --button-text: hsl(var(--hue), 35%, 90%);
+  --button-hover-bg: hsl(var(--hue), 25%, 30%);
+  --border: hsl(var(--hue), 20%, 40%);
+}
+
+[data-theme="blue"] {
+  --hue: 220;
+
+  --background: hsl(var(--hue), 30%, 10%);
+  --text: hsl(var(--hue), 35%, 90%);
+  --meta-text: hsl(var(--hue), 40%, 55%);
+  --button-bg: hsl(var(--hue), 55%, 25%);
+  --button-text: hsl(var(--hue), 35%, 90%);
+  --button-hover-bg: hsl(var(--hue), 55%, 35%);
+  --border: hsl(var(--hue), 45%, 50%);
+}
+
+body {
+  margin: 0;
+  background-color: var(--background);
+  color: var(--text);
+  font-family: sans-serif;
+}
