@@ -3,10 +3,11 @@ import { invoke } from '@tauri-apps/api/core';
 import MainPage from '../pages/MainPage';
 import ConfigPage from '../pages/ConfigPage';
 import { Button } from '../components/Button';
+import type { Page } from '../constants/pages';
 
 export default function App() {
   const [clientReady, setClientReady] = useState(false);
-  const [currentPage, setCurrentPage] = useState<'main' | 'config'>('main');
+  const [currentPage, setCurrentPage] = useState<Page>('main');
 
   useEffect(() => {
     const init = async () => {
@@ -26,7 +27,7 @@ export default function App() {
       <h1 className="mb-4 font-bold text-2xl">Welcome to Tauri + React</h1>
 
       {!clientReady && (
-        <p className="text-[var(--meta-text)]">Initializing client...</p>
+        <p className="text-(--meta-text)">Initializing client...</p>
       )}
 
       {clientReady && (

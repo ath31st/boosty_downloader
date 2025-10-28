@@ -1,11 +1,17 @@
-import { useState } from 'react';
-import styles from './MainPage.module.css';
+import { useState, useRef, useEffect } from 'react';
+import { Button } from '../components/Button';
 
 export default function MainPage() {
   const [url, setUrl] = useState('');
   const [logs, setLogs] = useState<string[]>([]);
   const [progress, setProgress] = useState(0);
   const [downloading, setDownloading] = useState(false);
+
+  const logsEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    logsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [logs]);
 
   const startDownload = async () => {
     if (!url) return;
@@ -25,35 +31,35 @@ export default function MainPage() {
   };
 
   return (
-    <div className="main-page">
-      <h2>Скачать контент</h2>
+    <div className="rounded-lg bg-(--background) p-4 text-(--text) shadow-md">
+      <h2 className="mb-4 font-semibold text-xl">Скачать контент</h2>
 
-      <div className={styles.inputGroup}>
+      <div className="mb-4 flex space-x-2">
         <input
           type="text"
           placeholder="Введите URL"
           value={url}
           onChange={(e) => setUrl(e.target.value)}
           disabled={downloading}
+          className="flex-1 rounded border border-(--border) bg-(--background) p-2 text-(--text) focus:outline-none focus:ring-(--button-bg) focus:ring-2"
         />
-        <button
-          type="button"
-          onClick={startDownload}
-          disabled={downloading || !url}
-        >
+        <Button onClick={startDownload} disabled={downloading || !url}>
           Скачать
-        </button>
+        </Button>
       </div>
 
-      <div className={styles.logs}>
-        {logs.map((line, idx) => (
-          <p key={idx}>{line}</p>
+      <div className="mb-4 h-32 overflow-y-auto rounded border border-(--border) bg-(--background) p-2">
+        {logs.map((line) => (
+          <p key={line} ref={logsEndRef} className="text-(--meta-text) text-sm">
+            {line}
+          </p>
         ))}
+        <div ref={logsEndRef} />
       </div>
 
-      <div className={styles.progressBar}>
+      <div className="h-4 w-full rounded bg-(--border)">
         <div
-          className={styles.progressFill}
+          className="h-4 rounded bg-(--button-bg)"
           style={{ width: `${progress}%` }}
         ></div>
       </div>
