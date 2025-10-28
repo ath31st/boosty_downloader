@@ -9,7 +9,6 @@ use crate::state::AppState;
 #[tauri::command]
 pub async fn get_config(state: State<'_, Arc<Mutex<AppState>>>) -> Result<AppConfig, String> {
     let state = state.lock().await;
-    dbg!(&state.config);
     Ok(state.config.clone())
 }
 

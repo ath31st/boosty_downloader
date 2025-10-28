@@ -24,10 +24,10 @@ export default function App() {
 
   return (
     <main className="container mx-auto p-2">
-      <h1 className="mb-4 font-bold text-2xl">Welcome to Tauri + React</h1>
+      <h1 className="mb-4 text-center font-bold text-2xl">Boosty Downloader</h1>
 
       {!clientReady && (
-        <p className="text-(--meta-text)">Initializing client...</p>
+        <p className="text-(--meta-text)">Инициализация клиента...</p>
       )}
 
       {clientReady && (

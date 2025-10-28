@@ -32,8 +32,6 @@ export default function MainPage() {
 
   return (
     <div className="flex flex-col gap-4 rounded-lg border border-(--border) bg-(--background) p-4 text-(--text)">
-      <h2 className="font-semibold text-xl">Скачать контент</h2>
-
       <div className="flex gap-4">
         <input
           type="text"
