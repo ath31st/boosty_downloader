@@ -19,9 +19,7 @@
         "attributePosition": "auto",
         "bracketSpacing": true,
         "includes": [
-            "client/src/**",
-            "server/src/**",
-            "shared/**"
+            "frontend/**/*.ts"
         ]
     },
     "linter": {
