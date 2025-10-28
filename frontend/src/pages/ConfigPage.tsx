@@ -1,46 +1,13 @@
-import { useState, useEffect } from 'react';
-import { invoke } from '@tauri-apps/api/core';
-import type { AppConfig } from '../types/config';
 import { Button } from '../components/Button';
 import { Input } from '../components/Input';
 import { Label } from '../components/Label';
 import { ConfigLabel } from '../components/ConfigLabel';
+import { useConfig } from '@/hooks/useConfig';
 
 export default function ConfigPage() {
-  const [config, setConfig] = useState<AppConfig | null>(null);
-  const [saving, setSaving] = useState(false);
+  const { config, handleChange, handleSave, isLoading, isSaving } = useConfig();
 
-  useEffect(() => {
-    const fetchConfig = async () => {
-      try {
-        const cfg = await invoke<AppConfig>('get_config');
-        setConfig(cfg);
-      } catch (err) {
-        console.error('Failed to fetch config:', err);
-      }
-    };
-    fetchConfig();
-  }, []);
-
-  const handleChange = (key: keyof AppConfig, value: unknown) => {
-    if (!config) return;
-    setConfig({ ...config, [key]: value });
-  };
-
-  const handleSave = async () => {
-    if (!config) return;
-    setSaving(true);
-    try {
-      await invoke('update_config', { newConfig: config });
-      console.log('Config updated');
-    } catch (err) {
-      console.error('Failed to update config:', err);
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  if (!config) {
+  if (isLoading || !config) {
     return (
       <div className="rounded-lg bg-(--background) p-4">
         <p>Загрузка конфигурации...</p>
@@ -92,8 +59,8 @@ export default function ConfigPage() {
         </Label>
       </div>
 
-      <Button className="w-50" onClick={handleSave} disabled={saving}>
-        {saving ? 'Сохраняем...' : 'Сохранить'}
+      <Button className="w-50" onClick={handleSave} disabled={isSaving}>
+        {isSaving ? 'Сохраняем...' : 'Сохранить'}
       </Button>
     </div>
   );
