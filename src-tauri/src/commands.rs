@@ -9,6 +9,7 @@ use crate::state::AppState;
 #[tauri::command]
 pub async fn get_config(state: State<'_, Arc<Mutex<AppState>>>) -> Result<AppConfig, String> {
     let state = state.lock().await;
+    dbg!(&state.config);
     Ok(state.config.clone())
 }
 
@@ -19,6 +20,9 @@ pub async fn update_config(
 ) -> Result<(), String> {
     let mut state = state.lock().await;
     state.config = new_config;
+    boosty_downloader_core::save_config(&state.config)
+        .await
+        .map_err(|e| e.to_string())?;
     Ok(())
 }
 
