@@ -33,8 +33,12 @@ pub async fn init_client(state: State<'_, Arc<Mutex<AppState>>>) -> Result<(), S
     boosty_downloader_core::init_client(&client)
         .await
         .map_err(|e| e.to_string())?;
+    let config = boosty_downloader_core::load_config()
+        .await
+        .map_err(|e| e.to_string())?;
 
     let mut state = state.lock().await;
     state.client = Some(client);
+    state.config = config;
     Ok(())
 }
