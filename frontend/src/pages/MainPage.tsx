@@ -1,8 +1,8 @@
-import { useState } from "react";
-import styles from "./MainPage.module.css";
+import { useState } from 'react';
+import styles from './MainPage.module.css';
 
 export default function MainPage() {
-  const [url, setUrl] = useState("");
+  const [url, setUrl] = useState('');
   const [logs, setLogs] = useState<string[]>([]);
   const [progress, setProgress] = useState(0);
   const [downloading, setDownloading] = useState(false);
@@ -20,7 +20,7 @@ export default function MainPage() {
       setLogs((prev) => [...prev, `Скачано ${i}%`]);
     }
 
-    setLogs((prev) => [...prev, "Скачивание завершено!"]);
+    setLogs((prev) => [...prev, 'Скачивание завершено!']);
     setDownloading(false);
   };
 
@@ -36,7 +36,11 @@ export default function MainPage() {
           onChange={(e) => setUrl(e.target.value)}
           disabled={downloading}
         />
-        <button onClick={startDownload} disabled={downloading || !url}>
+        <button
+          type="button"
+          onClick={startDownload}
+          disabled={downloading || !url}
+        >
           Скачать
         </button>
       </div>

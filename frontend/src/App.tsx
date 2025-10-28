@@ -1,20 +1,20 @@
-import { useState, useEffect } from "react";
-import { invoke } from "@tauri-apps/api/core";
-import MainPage from "./pages/MainPage";
-import ConfigPage from "./pages/ConfigPage";
+import { useState, useEffect } from 'react';
+import { invoke } from '@tauri-apps/api/core';
+import MainPage from './pages/MainPage';
+import ConfigPage from './pages/ConfigPage';
 
 export default function App() {
   const [clientReady, setClientReady] = useState(false);
-  const [currentPage, setCurrentPage] = useState<"main" | "config">("main");
+  const [currentPage, setCurrentPage] = useState<'main' | 'config'>('main');
 
   useEffect(() => {
     const init = async () => {
       try {
-        await invoke("init_client");
-        console.log("Client initialized");
+        await invoke('init_client');
+        console.log('Client initialized');
         setClientReady(true);
       } catch (err) {
-        console.error("Failed to init client:", err);
+        console.error('Failed to init client:', err);
       }
     };
     init();
@@ -28,14 +28,18 @@ export default function App() {
 
       {clientReady && (
         <>
-          <div className="buttons" style={{ marginBottom: "1rem" }}>
-            <button type="button" onClick={() => setCurrentPage("main")}>Main</button>
-            <button type="button" onClick={() => setCurrentPage("config")}>Config</button>
+          <div className="buttons" style={{ marginBottom: '1rem' }}>
+            <button type="button" onClick={() => setCurrentPage('main')}>
+              Main
+            </button>
+            <button type="button" onClick={() => setCurrentPage('config')}>
+              Config
+            </button>
           </div>
 
           <div className="content">
-            {currentPage === "main" && <MainPage />}
-            {currentPage === "config" && <ConfigPage />}
+            {currentPage === 'main' && <MainPage />}
+            {currentPage === 'config' && <ConfigPage />}
           </div>
         </>
       )}

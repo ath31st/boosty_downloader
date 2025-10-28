@@ -1,4 +1,4 @@
-import styles from "./ConfigPage.module.css";
+import styles from './ConfigPage.module.css';
 
 export default function ConfigPage() {
   return (
