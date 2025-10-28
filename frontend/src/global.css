@@ -15,6 +15,7 @@
   --hue: 220;
 
   --background: hsl(var(--hue), 30%, 10%);
+  --secondary-bg: hsl(var(--hue), 25%, 15%);
   --text: hsl(var(--hue), 35%, 90%);
   --meta-text: hsl(var(--hue), 15%, 60%);
   --button-bg: hsl(var(--hue), 25%, 20%);
@@ -27,6 +28,7 @@
   --hue: 220;
 
   --background: hsl(var(--hue), 30%, 10%);
+  --secondary-bg: hsl(var(--hue), 25%, 15%);
   --text: hsl(var(--hue), 35%, 90%);
   --meta-text: hsl(var(--hue), 40%, 55%);
   --button-bg: hsl(var(--hue), 55%, 25%);

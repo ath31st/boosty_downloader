@@ -32,9 +32,13 @@ export default function App() {
 
       {clientReady && (
         <>
-          <div className="mb-4 flex space-x-2">
-            <Button onClick={() => setCurrentPage('main')}>Main</Button>
-            <Button onClick={() => setCurrentPage('config')}>Config</Button>
+          <div className="mb-6 flex gap-4">
+            <Button className="flex-1" onClick={() => setCurrentPage('main')}>
+              Главная
+            </Button>
+            <Button className="flex-1" onClick={() => setCurrentPage('config')}>
+              Настройки
+            </Button>
           </div>
 
           <div className="w-full">

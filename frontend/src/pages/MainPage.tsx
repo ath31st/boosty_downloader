@@ -31,7 +31,7 @@ export default function MainPage() {
   };
 
   return (
-    <div className="rounded-lg bg-(--background) p-4 text-(--text) shadow-md">
+    <div className="rounded-lg border border-(--border) bg-(--background) p-4 text-(--text)">
       <h2 className="mb-4 font-semibold text-xl">Скачать контент</h2>
 
       <div className="mb-4 flex space-x-2">
