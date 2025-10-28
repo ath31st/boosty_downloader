@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { invoke } from '@tauri-apps/api/core';
-import MainPage from './pages/MainPage';
-import ConfigPage from './pages/ConfigPage';
+import MainPage from '../pages/MainPage';
+import ConfigPage from '../pages/ConfigPage';
+import { Button } from '../components/Button';
 
 export default function App() {
   const [clientReady, setClientReady] = useState(false);
@@ -21,23 +22,21 @@ export default function App() {
   }, []);
 
   return (
-    <main className="container">
-      <h1>Welcome to Tauri + React</h1>
+    <main className="container mx-auto p-2">
+      <h1 className="mb-4 font-bold text-2xl">Welcome to Tauri + React</h1>
 
-      {!clientReady && <p>Initializing client...</p>}
+      {!clientReady && (
+        <p className="text-[var(--meta-text)]">Initializing client...</p>
+      )}
 
       {clientReady && (
         <>
-          <div className="buttons" style={{ marginBottom: '1rem' }}>
-            <button type="button" onClick={() => setCurrentPage('main')}>
-              Main
-            </button>
-            <button type="button" onClick={() => setCurrentPage('config')}>
-              Config
-            </button>
+          <div className="mb-4 flex space-x-2">
+            <Button onClick={() => setCurrentPage('main')}>Main</Button>
+            <Button onClick={() => setCurrentPage('config')}>Config</Button>
           </div>
 
-          <div className="content">
+          <div className="w-full">
             {currentPage === 'main' && <MainPage />}
             {currentPage === 'config' && <ConfigPage />}
           </div>
