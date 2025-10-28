@@ -31,24 +31,24 @@ export default function MainPage() {
   };
 
   return (
-    <div className="rounded-lg border border-(--border) bg-(--background) p-4 text-(--text)">
-      <h2 className="mb-4 font-semibold text-xl">Скачать контент</h2>
+    <div className="flex flex-col gap-4 rounded-lg border border-(--border) bg-(--background) p-4 text-(--text)">
+      <h2 className="font-semibold text-xl">Скачать контент</h2>
 
-      <div className="mb-4 flex space-x-2">
+      <div className="flex gap-4">
         <input
           type="text"
           placeholder="Введите URL"
           value={url}
           onChange={(e) => setUrl(e.target.value)}
           disabled={downloading}
-          className="flex-1 rounded border border-(--border) bg-(--background) p-2 text-(--text) focus:outline-none focus:ring-(--button-bg) focus:ring-2"
+          className="flex-1 rounded-lg border border-(--border) bg-(--background) p-2 text-(--text) focus:outline-none focus:ring-(--button-bg) focus:ring-2"
         />
         <Button onClick={startDownload} disabled={downloading || !url}>
           Скачать
         </Button>
       </div>
 
-      <div className="mb-4 h-32 overflow-y-auto rounded border border-(--border) bg-(--background) p-2">
+      <div className="h-60 overflow-y-auto rounded-lg border border-(--border) bg-(--background) p-2">
         {logs.map((line) => (
           <p key={line} ref={logsEndRef} className="text-(--meta-text) text-sm">
             {line}
@@ -57,9 +57,9 @@ export default function MainPage() {
         <div ref={logsEndRef} />
       </div>
 
-      <div className="h-4 w-full rounded bg-(--border)">
+      <div className="h-4 w-full rounded-lg bg-(--border)">
         <div
-          className="h-4 rounded bg-(--button-bg)"
+          className="h-4 rounded-lg bg-(--button-bg)"
           style={{ width: `${progress}%` }}
         ></div>
       </div>

@@ -49,8 +49,8 @@ export default function ConfigPage() {
   }
 
   return (
-    <div className="space-y-6 rounded-lg border border-(--border) bg-(--background) p-4">
-      <div className="space-y-4">
+    <div className="flex flex-col items-center gap-6 rounded-lg border border-(--border) bg-(--background) p-4">
+      <div className="flex w-full flex-col gap-4">
         <Label>
           <ConfigLabel label="Posts limit:" />
           <Input
@@ -92,7 +92,7 @@ export default function ConfigPage() {
         </Label>
       </div>
 
-      <Button onClick={handleSave} disabled={saving}>
+      <Button className="w-50" onClick={handleSave} disabled={saving}>
         {saving ? 'Сохраняем...' : 'Сохранить'}
       </Button>
     </div>

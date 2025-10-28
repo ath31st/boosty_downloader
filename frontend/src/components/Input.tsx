@@ -25,7 +25,7 @@ export function Input({
           ? onChange(Number(e.target.value))
           : onChange(e.target.value)
       }
-      className={`rounded border border-(--border) bg-(--background) p-1 text-(--text) focus:outline-none focus:ring-(--button-bg) focus:ring-2 ${className ?? ''}`}
+      className={`rounded-lg border border-(--border) bg-(--background) p-1 text-(--text) focus:outline-none focus:ring-(--button-bg) focus:ring-2 ${className ?? ''}`}
     />
   );
 }
