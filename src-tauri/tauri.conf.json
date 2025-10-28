@@ -14,7 +14,8 @@
       {
         "title": "Boosty Downloader",
         "width": 800,
-        "height": 600
+        "height": 500,
+        "resizable": false
       }
     ],
     "security": {
