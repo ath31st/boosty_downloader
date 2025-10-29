@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use boosty_downloader_core::AppConfig;
+use boosty_downloader_core::{log_error, log_info, AppConfig};
 use tauri::State;
 use tokio::sync::Mutex;
 
@@ -40,5 +40,24 @@ pub async fn init_client(state: State<'_, Arc<Mutex<AppState>>>) -> Result<(), S
     let mut state = state.lock().await;
     state.client = Some(client);
     state.config = config;
+    log_info!("Client initialized");
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn process_boosty_url_gui(
+    input: String,
+    state: State<'_, Arc<Mutex<AppState>>>,
+) -> Result<(), String> {
+    let state = state.lock().await;
+
+    let client = &state.client.as_ref().ok_or("Client not initialized")?;
+    let cfg = &state.config;
+
+    if let Err(err) = boosty_downloader_core::process_boosty_url(client, cfg, &input).await {
+        log_error!("{err}");
+        return Err(err.to_string());
+    }
+
     Ok(())
 }
