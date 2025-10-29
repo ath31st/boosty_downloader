@@ -631,7 +631,7 @@
     "@tailwindcss/oxide" "4.1.16"
     tailwindcss "4.1.16"
 
-"@tauri-apps/api@^2", "@tauri-apps/api@^2.8.0":
+"@tauri-apps/api@2.9.1", "@tauri-apps/api@^2.8.0":
   version "2.9.0"
   resolved "https://registry.yarnpkg.com/@tauri-apps/api/-/api-2.9.0.tgz#047fcbfec05a719b0cec997eee244cee453fb2fc"
   integrity sha512-qD5tMjh7utwBk9/5PrTA/aGr3i5QaJ/Mlt7p8NilQ45WgbifUNPyKWsA63iQ8YfQq6R8ajMapU+/Q8nMcPRLNw==
@@ -708,7 +708,7 @@
     "@tauri-apps/cli-win32-ia32-msvc" "2.9.1"
     "@tauri-apps/cli-win32-x64-msvc" "2.9.1"
 
-"@tauri-apps/plugin-opener@^2":
+"@tauri-apps/plugin-opener@2.5.2":
   version "2.5.2"
   resolved "https://registry.yarnpkg.com/@tauri-apps/plugin-opener/-/plugin-opener-2.5.2.tgz#6e2127d0ad7627a16103215ed596e4fa42bda199"
   integrity sha512-ei/yRRoCklWHImwpCcDK3VhNXx+QXM9793aQ64YxpqVF0BDuuIlXhZgiAkc15wnPVav+IbkYhmDJIv5R326Mew==

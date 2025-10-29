@@ -21,8 +21,8 @@ tauri-build = { version = "2", features = [] }
 boosty_api = { path = "../../boosty_api" }
 boosty_downloader_core = { path = "../core" }
 anyhow = "1"
-tauri = { version = "2", features = [] }
-tauri-plugin-opener = "2"
+tauri = { version = "2.9.1", features = [] }
+tauri-plugin-opener = "2.5.2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 tokio = { version = "1", features = [
