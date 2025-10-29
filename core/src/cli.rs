@@ -19,15 +19,15 @@ pub fn show_menu() {
     println!("8. Exit");
 }
 
-fn info(msg: &str) {
+pub fn info(msg: &str) {
     println!("\x1b[34mInfo:\x1b[0m {msg}");
 }
 
-fn error(msg: &str) {
+pub fn error(msg: &str) {
     eprintln!("\x1b[31mError:\x1b[0m {msg}");
 }
 
-fn warning(msg: &str) {
+pub fn warning(msg: &str) {
     println!("\x1b[33mWarning:\x1b[0m {msg}");
 }
 

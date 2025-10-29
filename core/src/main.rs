@@ -1,8 +1,12 @@
 use anyhow::Result;
-use boosty_downloader_core::{handle_menu, init_client, make_client, print_error};
+use boosty_downloader_core::{
+    console_logger::ConsoleLogger, handle_menu, init_client, logger, make_client, print_error,
+};
 
 #[tokio::main]
 async fn main() {
+    logger::set_logger(ConsoleLogger);
+
     if let Err(e) = run().await {
         print_error(&e);
         std::process::exit(1);
