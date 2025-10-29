@@ -1,9 +1,10 @@
 use crate::headers;
 use anyhow::{Context, Result};
 use chrono::{DateTime, Utc};
+use comrak::Options;
+use comrak::options::{Extension, Parse, Render};
 use futures_util::StreamExt;
 use indicatif::{ProgressBar, ProgressStyle};
-use markdown::{CompileOptions, Options, ParseOptions};
 use sha2::{Digest, Sha256};
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
@@ -330,23 +331,36 @@ pub async fn convert_markdown_file_to_html(folder_path: &Path, title: &str) -> R
         return Ok(());
     }
 
-    let opts = Options {
-        parse: ParseOptions::default(),
-        compile: CompileOptions {
-            allow_dangerous_html: true,
-            ..CompileOptions::default()
+    let content = fs::read_to_string(&md_path).await?;
+
+    let options = Options {
+        extension: Extension {
+            strikethrough: true,
+            table: true,
+            autolink: true,
+            tasklist: true,
+            superscript: true,
+            footnotes: true,
+            description_lists: true,
+            ..Default::default()
+        },
+        parse: Parse {
+            smart: true,
+            ..Default::default()
+        },
+        render: Render {
+            r#unsafe: true,
+            ..Default::default()
         },
     };
 
-    let content = fs::read_to_string(md_path.clone()).await?;
-    let html_content = markdown::to_html_with_options(&content, &opts)
-        .map_err(|e| anyhow::Error::msg(format!("Failed to convert Markdown to HTML: {e}")))?;
+    let html_content = comrak::markdown_to_html(&content, &options);
 
     let template = include_str!("../../templates/template.html");
     let styled_html = template.replace("{content}", &html_content);
 
     let html_path = md_path.with_extension("html");
-    fs::write(&html_path, &styled_html)
+    fs::write(&html_path, styled_html)
         .await
         .with_context(|| format!("Failed to write HTML file '{}'", html_path.display()))?;
 
