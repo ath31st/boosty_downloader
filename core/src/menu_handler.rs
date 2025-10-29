@@ -85,7 +85,7 @@ pub async fn handle_menu(client: &ApiClient) -> Result<bool> {
     Ok(true)
 }
 
-async fn process_boosty_url(client: &ApiClient, cfg: &AppConfig, input: &str) -> Result<()> {
+pub async fn process_boosty_url(client: &ApiClient, cfg: &AppConfig, input: &str) -> Result<()> {
     let parsed = parser::parse_boosty_url(input)
         .with_context(|| format!("Failed to parse Boosty URL '{input}'"))?;
 

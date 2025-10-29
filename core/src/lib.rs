@@ -11,7 +11,7 @@ pub(crate) mod post_handler;
 
 pub use cli::print_error;
 pub use config::{AppConfig, CommentsConfig, apply_config, load_config, save_config};
-pub use menu_handler::handle_menu;
+pub use menu_handler::{handle_menu, process_boosty_url};
 
 use anyhow::Result;
 use boosty_api::api_client::ApiClient;
