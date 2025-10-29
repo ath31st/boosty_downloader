@@ -16,7 +16,7 @@ export default function MainPage() {
   }, [logs]);
 
   useEffect(() => {
-    const unlisten = listen('log', (event) => {
+    const unlistenLog = listen('log', (event) => {
       const msg = event.payload as {
         level: 'Info' | 'Warn' | 'Error';
         message: string;
@@ -24,8 +24,19 @@ export default function MainPage() {
       setLogs((prev) => [...prev, `[${msg.level}] ${msg.message}`]);
     });
 
+    const unlistenProgress = listen('progress', (event) => {
+      const msg = event.payload as { current: number; total: number };
+      if (msg.total > 0) {
+        const percent = Math.min((msg.current / msg.total) * 100, 100);
+        setProgress(percent);
+      } else {
+        setProgress(0);
+      }
+    });
+
     return () => {
-      unlisten.then((f) => f());
+      unlistenLog.then((f) => f());
+      unlistenProgress.then((f) => f());
     };
   }, []);
 
@@ -73,7 +84,7 @@ export default function MainPage() {
 
       <div className="h-4 w-full rounded-lg bg-(--border)">
         <div
-          className="h-4 rounded-lg bg-(--button-bg)"
+          className="h-4 rounded-lg bg-(--button-bg) transition-all duration-150"
           style={{ width: `${progress}%` }}
         ></div>
       </div>
