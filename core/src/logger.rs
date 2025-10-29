@@ -34,7 +34,7 @@ pub fn get_logger() -> Arc<dyn Logger> {
 #[macro_export]
 macro_rules! log_info {
     ($($arg:tt)*) => {{
-        use $crate::logger::{get_logger, LogLevel};
+        use $crate::{get_logger, LogLevel};
         get_logger().log(LogLevel::Info, &format!($($arg)*));
     }}
 }
@@ -42,7 +42,7 @@ macro_rules! log_info {
 #[macro_export]
 macro_rules! log_warn {
     ($($arg:tt)*) => {{
-        use $crate::logger::{get_logger, LogLevel};
+        use $crate::{get_logger, LogLevel};
         get_logger().log(LogLevel::Warn, &format!($($arg)*));
     }}
 }
@@ -50,7 +50,7 @@ macro_rules! log_warn {
 #[macro_export]
 macro_rules! log_error {
     ($($arg:tt)*) => {{
-        use $crate::logger::{get_logger, LogLevel};
+        use $crate::{get_logger, LogLevel};
         get_logger().log(LogLevel::Error, &format!($($arg)*));
     }}
 }
