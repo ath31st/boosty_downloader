@@ -1,26 +1,10 @@
-import { useState, useEffect } from 'react';
-import { invoke } from '@tauri-apps/api/core';
 import MainPage from '../pages/MainPage';
 import ConfigPage from '../pages/ConfigPage';
 import { Button } from '../components/Button';
-import type { Page } from '../constants/pages';
+import { useInitApp } from '@/hooks/useInitApp';
 
 export default function App() {
-  const [clientReady, setClientReady] = useState(false);
-  const [currentPage, setCurrentPage] = useState<Page>('main');
-
-  useEffect(() => {
-    const init = async () => {
-      try {
-        await invoke('init_client');
-        console.log('Client initialized');
-        setClientReady(true);
-      } catch (err) {
-        console.error('Failed to init client:', err);
-      }
-    };
-    init();
-  }, []);
+  const { currentPage, clientReady, setCurrentPage } = useInitApp();
 
   return (
     <main className="container mx-auto p-2">
