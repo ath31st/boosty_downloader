@@ -1,5 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Button } from '../components/Button';
+import { invoke } from '@tauri-apps/api/core';
+import { listen } from '@tauri-apps/api/event';
 
 export default function MainPage() {
   const [url, setUrl] = useState('');
@@ -13,21 +15,35 @@ export default function MainPage() {
     logsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [logs]);
 
+  useEffect(() => {
+    const unlisten = listen('log', (event) => {
+      const msg = event.payload as {
+        level: 'Info' | 'Warn' | 'Error';
+        message: string;
+      };
+      setLogs((prev) => [...prev, `[${msg.level}] ${msg.message}`]);
+    });
+
+    return () => {
+      unlisten.then((f) => f());
+    };
+  }, []);
+
   const startDownload = async () => {
     if (!url) return;
+
     setLogs([]);
     setProgress(0);
     setDownloading(true);
 
-    const total = 100;
-    for (let i = 1; i <= total; i++) {
-      await new Promise((res) => setTimeout(res, 50));
-      setProgress(i);
-      setLogs((prev) => [...prev, `Скачано ${i}%`]);
+    try {
+      await invoke('process_boosty_url_gui', { input: url });
+      setLogs((prev) => [...prev, 'Скачивание завершено!']);
+    } catch (e) {
+      setLogs((prev) => [...prev, `Ошибка: ${e}`]);
+    } finally {
+      setDownloading(false);
     }
-
-    setLogs((prev) => [...prev, 'Скачивание завершено!']);
-    setDownloading(false);
   };
 
   return (

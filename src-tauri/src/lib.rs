@@ -23,7 +23,8 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             commands::get_config,
             commands::update_config,
-            commands::init_client
+            commands::init_client,
+            commands::process_boosty_url_gui
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
