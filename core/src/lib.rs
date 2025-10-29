@@ -10,11 +10,12 @@ pub(crate) mod logger;
 pub(crate) mod menu_handler;
 pub(crate) mod parser;
 pub(crate) mod post_handler;
+pub(crate) mod progress_reporter;
 
 pub use cli::print_error;
 pub use config::{AppConfig, CommentsConfig, apply_config, load_config, save_config};
 pub use console_logger::ConsoleLogger;
-pub use logger::{LogLevel, LogMessage, Logger, get_logger, set_logger};
+pub use logger::{LogLevel, LogMessage, Logger, ProgressMessage, get_logger, set_logger};
 pub use menu_handler::{handle_menu, process_boosty_url};
 
 use anyhow::Result;

@@ -1,10 +1,10 @@
 use crate::headers;
+use crate::progress_reporter::ProgressReporter;
 use anyhow::{Context, Result};
 use chrono::{DateTime, Utc};
 use comrak::Options;
 use comrak::options::{Extension, Parse, Render};
 use futures_util::StreamExt;
-use indicatif::{ProgressBar, ProgressStyle};
 use sha2::{Digest, Sha256};
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
@@ -192,23 +192,7 @@ pub async fn download_file_once(
 
     let total_size = resp.content_length().unwrap_or(0);
 
-    let pb = if total_size > 0 {
-        let pb = ProgressBar::new(total_size);
-        pb.set_style(
-            ProgressStyle::with_template(
-                "{spinner:.green} [{bar:40.cyan/blue}] {bytes}/{total_bytes} ({eta})",
-            )?
-            .progress_chars("=> "),
-        );
-        pb
-    } else {
-        let pb = ProgressBar::new_spinner();
-        pb.set_style(ProgressStyle::with_template(
-            "{spinner:.green} Downloading file... {bytes}",
-        )?);
-        pb.enable_steady_tick(Duration::from_millis(100));
-        pb
-    };
+    let reporter = ProgressReporter::new(total_size)?;
 
     let mut file = fs::File::create(&output_path)
         .await
@@ -218,9 +202,9 @@ pub async fn download_file_once(
     while let Some(chunk) = stream.next().await {
         let chunk = chunk.with_context(|| format!("Error while reading chunk from '{url}'"))?;
         file.write_all(&chunk).await?;
-        pb.inc(chunk.len() as u64);
+        reporter.inc(chunk.len() as u64);
     }
-    pb.finish_and_clear();
+    reporter.finish();
 
     Ok(DownloadResult::Success)
 }
