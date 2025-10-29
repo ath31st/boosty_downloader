@@ -2,12 +2,14 @@ import { useState, useRef, useEffect } from 'react';
 import { Button } from '../components/Button';
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
+import { DownloadProgress } from '@/components/DownloadProgress';
 
 export default function MainPage() {
   const [url, setUrl] = useState('');
   const [logs, setLogs] = useState<string[]>([]);
-  const [progress, setProgress] = useState(0);
   const [downloading, setDownloading] = useState(false);
+  const [progress, setProgress] = useState({ current: 0, total: 0 });
+  const [startTime, setStartTime] = useState<number | null>(null);
 
   const logsEndRef = useRef<HTMLDivElement>(null);
 
@@ -26,12 +28,7 @@ export default function MainPage() {
 
     const unlistenProgress = listen('progress', (event) => {
       const msg = event.payload as { current: number; total: number };
-      if (msg.total > 0) {
-        const percent = Math.min((msg.current / msg.total) * 100, 100);
-        setProgress(percent);
-      } else {
-        setProgress(0);
-      }
+      setProgress(msg);
     });
 
     return () => {
@@ -44,8 +41,9 @@ export default function MainPage() {
     if (!url) return;
 
     setLogs([]);
-    setProgress(0);
     setDownloading(true);
+    setProgress({ current: 0, total: 0 });
+    setStartTime(Date.now());
 
     try {
       await invoke('process_boosty_url_gui', { input: url });
@@ -82,12 +80,11 @@ export default function MainPage() {
         <div ref={logsEndRef} />
       </div>
 
-      <div className="h-4 w-full rounded-lg bg-(--border)">
-        <div
-          className="h-4 rounded-lg bg-(--button-bg) transition-all duration-150"
-          style={{ width: `${progress}%` }}
-        ></div>
-      </div>
+      <DownloadProgress
+        current={progress.current}
+        total={progress.total}
+        startTime={startTime ?? Date.now()}
+      />
     </div>
   );
 }
