@@ -4,15 +4,23 @@ import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 import { DownloadProgress } from '@/components/DownloadProgress';
 
-export default function MainPage() {
+interface MainPageProps {
+  isDownloading: boolean;
+  setDownloading: (value: boolean) => void;
+}
+
+export default function MainPage({
+  isDownloading,
+  setDownloading,
+}: MainPageProps) {
   const [url, setUrl] = useState('');
   const [logs, setLogs] = useState<string[]>([]);
-  const [downloading, setDownloading] = useState(false);
   const [progress, setProgress] = useState({ current: 0, total: 0 });
   const [startTime, setStartTime] = useState<number | null>(null);
 
   const logsEndRef = useRef<HTMLDivElement>(null);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: crying linter with red text
   useEffect(() => {
     logsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [logs]);
@@ -63,10 +71,10 @@ export default function MainPage() {
           placeholder="Введите URL"
           value={url}
           onChange={(e) => setUrl(e.target.value)}
-          disabled={downloading}
+          disabled={isDownloading}
           className="flex-1 rounded-lg border border-(--border) bg-(--background) p-2 text-(--text) focus:outline-none focus:ring-(--button-bg) focus:ring-2"
         />
-        <Button onClick={startDownload} disabled={downloading || !url}>
+        <Button onClick={startDownload} disabled={isDownloading || !url}>
           Скачать
         </Button>
       </div>
