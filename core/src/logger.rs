@@ -1,6 +1,6 @@
 use once_cell::sync::OnceCell;
 use serde::Serialize;
-use std::sync::Arc;
+use std::{any::Any, sync::Arc};
 
 #[derive(Serialize, Debug, Clone)]
 pub enum LogLevel {
@@ -15,8 +15,18 @@ pub struct LogMessage<'a> {
     pub message: &'a str,
 }
 
+#[derive(Serialize, Debug, Clone)]
+pub struct ProgressMessage {
+    pub current: u64,
+    pub total: u64,
+}
+
 pub trait Logger: Send + Sync {
     fn log(&self, level: LogLevel, message: &str);
+    fn progress(&self, msg: ProgressMessage) {
+        let _ = msg;
+    }
+    fn as_any(&self) -> &(dyn Any + 'static);
 }
 
 static LOGGER: OnceCell<Arc<dyn Logger>> = OnceCell::new();

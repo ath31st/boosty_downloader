@@ -1,3 +1,5 @@
+use std::any::Any;
+
 use crate::{
     cli,
     logger::{LogLevel, Logger},
@@ -12,5 +14,8 @@ impl Logger for ConsoleLogger {
             LogLevel::Warn => cli::warning(message),
             LogLevel::Error => cli::error(message),
         }
+    }
+    fn as_any(&self) -> &(dyn Any + 'static) {
+        self
     }
 }
