@@ -1,4 +1,4 @@
-use crate::file_handler::DownloadResult;
+use crate::{file_handler::DownloadResult, log_error, log_info};
 use anyhow::Error;
 use std::collections::HashMap;
 
@@ -74,15 +74,13 @@ pub fn exit_message() {
 pub fn show_download_result(result: DownloadResult, file_name: &str, post_title: &str) {
     match result {
         DownloadResult::Skipped => {
-            info(&format!("File '{file_name}' skipped"));
+            log_info!("File '{file_name}' skipped");
         }
         DownloadResult::Error(err) => {
-            error(&err);
+            log_error!("{err}");
         }
         DownloadResult::Success => {
-            info(&format!(
-                "File '{file_name}' downloaded for post {post_title}"
-            ));
+            log_info!("File '{file_name}' downloaded for post '{post_title}'");
         }
     }
 }
