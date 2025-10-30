@@ -1,4 +1,4 @@
-use crate::file_handler::DownloadResult;
+use crate::{file_handler::DownloadResult, log_error, log_info};
 use anyhow::Error;
 use std::collections::HashMap;
 
@@ -19,15 +19,15 @@ pub fn show_menu() {
     println!("8. Exit");
 }
 
-fn info(msg: &str) {
+pub fn info(msg: &str) {
     println!("\x1b[34mInfo:\x1b[0m {msg}");
 }
 
-fn error(msg: &str) {
+pub fn error(msg: &str) {
     eprintln!("\x1b[31mError:\x1b[0m {msg}");
 }
 
-fn warning(msg: &str) {
+pub fn warning(msg: &str) {
     println!("\x1b[33mWarning:\x1b[0m {msg}");
 }
 
@@ -74,15 +74,13 @@ pub fn exit_message() {
 pub fn show_download_result(result: DownloadResult, file_name: &str, post_title: &str) {
     match result {
         DownloadResult::Skipped => {
-            info(&format!("File '{file_name}' skipped"));
+            log_info!("File '{file_name}' skipped");
         }
         DownloadResult::Error(err) => {
-            error(&err);
+            log_error!("{err}");
         }
         DownloadResult::Success => {
-            info(&format!(
-                "File '{file_name}' downloaded for post {post_title}"
-            ));
+            log_info!("File '{file_name}' downloaded for post '{post_title}'");
         }
     }
 }

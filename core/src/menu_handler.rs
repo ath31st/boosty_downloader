@@ -1,6 +1,7 @@
 use crate::comment_handler;
 use crate::config;
 use crate::config::AppConfig;
+use crate::log_error;
 use crate::post_handler;
 use crate::{cli, parser};
 use anyhow::{Context, Result};
@@ -16,7 +17,7 @@ pub async fn handle_menu(client: &ApiClient) -> Result<bool> {
             let cfg = config::load_config().await?;
             let input = cli::read_user_input(cli::ENTER_PATH);
             if let Err(e) = process_boosty_url(client, &cfg, &input).await {
-                cli::print_error(&e)
+                log_error!("{e}");
             };
         }
         2 => {
@@ -70,7 +71,7 @@ pub async fn handle_menu(client: &ApiClient) -> Result<bool> {
                         .with_context(|| "Failed to update posts limit")?;
                 }
                 Err(e) => {
-                    cli::print_error(&e);
+                    log_error!("{e}");
                 }
             }
         }
@@ -85,7 +86,7 @@ pub async fn handle_menu(client: &ApiClient) -> Result<bool> {
     Ok(true)
 }
 
-async fn process_boosty_url(client: &ApiClient, cfg: &AppConfig, input: &str) -> Result<()> {
+pub async fn process_boosty_url(client: &ApiClient, cfg: &AppConfig, input: &str) -> Result<()> {
     let parsed = parser::parse_boosty_url(input)
         .with_context(|| format!("Failed to parse Boosty URL '{input}'"))?;
 
