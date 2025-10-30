@@ -38,6 +38,24 @@ build_crate() {
 
         cp "$BIN_PATH" "$OUTPUT_FILE"
         echo "Saved: $OUTPUT_FILE"
+
+        if [ "$is_tauri" = true ] && [[ "$TARGET" == *"windows"* ]]; then
+            WEBVIEW_DLL="$PREFIX/frontend/webview2-fixed/WebView2Loader.dll"
+            ZIP_NAME="$OUTPUT_DIR/${crate_name}-${version}-windows-x86_64.zip"
+
+            if [ -f "$WEBVIEW_DLL" ]; then
+                echo "Packing $crate_name + WebView2Loader.dll into $ZIP_NAME"
+                (
+                    cd "$OUTPUT_DIR"
+                    zip -j "$ZIP_NAME" \
+                        "${crate_name}-${version}-windows-x86_64.exe" \
+                        "$WEBVIEW_DLL"
+                )
+                echo "Created archive: $ZIP_NAME"
+            else
+                echo "Warning: $WEBVIEW_DLL not found, skipping DLL packaging"
+            fi
+        fi
     done
 
     # for TARGET in "${TARGETS[@]}"; do
