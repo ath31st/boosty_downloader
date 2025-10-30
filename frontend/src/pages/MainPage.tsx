@@ -6,6 +6,7 @@ import { DownloadProgress } from '@/components/DownloadProgress';
 import type { LogMessage } from '@/types/logMessage';
 import { FormatLog } from '@/components/FormatLog';
 import type { ProgressMessage } from '@/types/progressMessage';
+import { OpenFolderButton } from '@/components/OpenFolderButton';
 
 interface MainPageProps {
   isDownloading: boolean;
@@ -76,6 +77,7 @@ export default function MainPage({
         <Button onClick={startDownload} disabled={isDownloading || !url}>
           Скачать
         </Button>
+        <OpenFolderButton />
       </div>
 
       <div className="h-70 overflow-y-auto rounded-lg border border-(--border) bg-(--secondary-bg) p-2">

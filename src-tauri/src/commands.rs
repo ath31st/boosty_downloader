@@ -61,3 +61,10 @@ pub async fn process_boosty_url_gui(
 
     Ok(())
 }
+
+#[tauri::command]
+pub fn get_exe_path() -> Result<String, String> {
+    std::env::current_exe()
+        .map(|p| p.to_string_lossy().to_string())
+        .map_err(|e| e.to_string())
+}

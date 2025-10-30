@@ -13,6 +13,7 @@ pub fn run() {
     let state = Arc::new(Mutex::new(AppState::default()));
 
     tauri::Builder::default()
+        .plugin(tauri_plugin_fs::init())
         .setup(|app| {
             let logger = tauri_logger::TauriLogger::new(app.handle().clone());
             boosty_downloader_core::set_logger(logger);
@@ -24,7 +25,8 @@ pub fn run() {
             commands::get_config,
             commands::update_config,
             commands::init_client,
-            commands::process_boosty_url_gui
+            commands::process_boosty_url_gui,
+            commands::get_exe_path
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
