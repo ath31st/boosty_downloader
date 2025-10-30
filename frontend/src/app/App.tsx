@@ -1,39 +1,39 @@
 import MainPage from '../pages/MainPage';
 import ConfigPage from '../pages/ConfigPage';
-import { Button } from '../components/Button';
 import { useInitApp } from '@/hooks/useInitApp';
 import { useDownloadingContent } from '@/hooks/useDownloadingContent';
+import { Header } from '@/components/Header';
+import { PageTabs } from '@/components/PageTabs';
+import { Button } from '@/components/Button';
 
 export default function App() {
-  const { currentPage, clientReady, setCurrentPage } = useInitApp();
+  const { currentPage, clientReady, setCurrentPage, initFailed, handleReload } =
+    useInitApp();
   const { isDownloading, setDownloading } = useDownloadingContent();
 
   return (
     <main className="container mx-auto p-2">
-      <h1 className="mb-4 text-center font-bold text-2xl">Boosty Downloader</h1>
+      <Header />
 
       {!clientReady && (
         <p className="text-(--meta-text)">Инициализация клиента...</p>
       )}
 
-      {clientReady && (
+      {initFailed && (
+        <div className="mt-40 flex flex-col items-center gap-4">
+          <p className="text-(--meta-text)">
+            Не удалось инициализировать клиент
+          </p>
+          <Button onClick={handleReload}>Перезагрузить приложение</Button>
+        </div>
+      )}
+
+      {clientReady && !initFailed && (
         <>
-          <div className="mb-6 flex gap-4">
-            <Button
-              className="flex-1"
-              disabled={isDownloading}
-              onClick={() => setCurrentPage('main')}
-            >
-              Главная
-            </Button>
-            <Button
-              className="flex-1"
-              disabled={isDownloading}
-              onClick={() => setCurrentPage('config')}
-            >
-              Настройки
-            </Button>
-          </div>
+          <PageTabs
+            setCurrentPage={setCurrentPage}
+            isDownloading={isDownloading}
+          />
 
           <div className="w-full">
             {currentPage === 'main' && (

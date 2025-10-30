@@ -1,6 +1,6 @@
 [package]
 name = "boosty_downloader_gui"
-version = "0.4.0"
+version = "0.6.0"
 description = "A Tauri App"
 edition = "2021"
 
