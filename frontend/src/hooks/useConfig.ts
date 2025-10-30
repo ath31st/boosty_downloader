@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import type { AppConfig } from '@/types/config';
+import { toast } from 'sonner';
 
 export function useConfig() {
   const [config, setConfig] = useState<AppConfig | null>(null);
@@ -31,7 +32,9 @@ export function useConfig() {
     try {
       await invoke('update_config', { newConfig: config });
       console.log('Config updated');
+      toast.success('Настройки сохранены');
     } catch (err) {
+      toast.error('Не удалось сохранить настройки');
       console.error('Failed to update config:', err);
     } finally {
       setSaving(false);
