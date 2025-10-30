@@ -7,6 +7,7 @@ import type { LogMessage } from '@/types/logMessage';
 import { FormatLog } from '@/components/FormatLog';
 import type { ProgressMessage } from '@/types/progressMessage';
 import { OpenFolderButton } from '@/components/OpenFolderButton';
+import { DownloadIcon } from 'lucide-react';
 
 interface MainPageProps {
   isDownloading: boolean;
@@ -75,7 +76,7 @@ export default function MainPage({
           className="flex-1 rounded-lg border border-(--border) bg-(--secondary-bg) p-2 text-(--text) focus:outline-none focus:ring-(--button-bg) focus:ring-2"
         />
         <Button onClick={startDownload} disabled={isDownloading || !url}>
-          Скачать
+          <DownloadIcon />
         </Button>
         <OpenFolderButton />
       </div>
