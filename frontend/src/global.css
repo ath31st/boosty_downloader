@@ -22,6 +22,7 @@
   --button-text: hsl(var(--hue), 35%, 90%);
   --button-hover-bg: hsl(var(--hue), 25%, 30%);
   --border: hsl(var(--hue), 20%, 40%);
+  --tooltip-bg: hsl(var(--hue), 25%, 15%);
 }
 
 [data-theme="blue"] {
@@ -35,6 +36,7 @@
   --button-text: hsl(var(--hue), 35%, 90%);
   --button-hover-bg: hsl(var(--hue), 55%, 35%);
   --border: hsl(var(--hue), 45%, 50%);
+  --tooltip-bg: hsl(var(--hue), 25%, 15%);
 }
 
 body {
