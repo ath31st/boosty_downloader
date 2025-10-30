@@ -1,5 +1,5 @@
-use crate::headers;
 use crate::progress_reporter::ProgressReporter;
+use crate::{headers, log_error, log_info, log_warn};
 use anyhow::{Context, Result};
 use chrono::{DateTime, Utc};
 use comrak::Options;
@@ -128,15 +128,16 @@ async fn download_file_content(
     title: &str,
     signed_query: Option<&str>,
 ) -> Result<DownloadResult> {
+    log_info!("Downloading file '{title}'...");
     for attempt in 1..=MAX_RETRIES {
         match download_file_once(folder_path, url, title, signed_query).await {
             Ok(r @ DownloadResult::Success) => return Ok(r),
             Ok(r @ DownloadResult::Skipped) => return Ok(r),
             Ok(_r @ DownloadResult::Error(_)) if attempt < MAX_RETRIES => {
-                eprintln!("Download attempt {attempt} failed (logical error), retrying...");
+                log_warn!("Download attempt {attempt} failed (logical error), retrying...");
             }
             Err(e) if attempt < MAX_RETRIES => {
-                eprintln!("Download attempt {attempt} failed with error: {e}, retrying...");
+                log_error!("Download attempt {attempt} failed with error: {e}");
             }
             result => return result,
         }

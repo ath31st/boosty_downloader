@@ -5,7 +5,6 @@ export function ToasterProvider() {
     <Toaster
       position="bottom-right"
       richColors
-      closeButton
       duration={3000}
       toastOptions={{
         style: {
