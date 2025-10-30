@@ -5,7 +5,7 @@ interface ConfigLabelProps {
 
 export function ConfigLabel({ label, className }: ConfigLabelProps) {
   return (
-    <span className={`w-40 text-(--meta-text) text-sm ${className ?? ''}`}>
+    <span className={`w-40 text-(--meta-text) text-lg ${className ?? ''}`}>
       {label}
     </span>
   );

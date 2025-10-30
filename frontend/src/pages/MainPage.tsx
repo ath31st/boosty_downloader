@@ -8,6 +8,8 @@ import { FormatLog } from '@/components/FormatLog';
 import type { ProgressMessage } from '@/types/progressMessage';
 import { OpenFolderButton } from '@/components/OpenFolderButton';
 import { DownloadIcon } from 'lucide-react';
+import { toast } from 'sonner';
+import { Input } from '@/components/Input';
 
 interface MainPageProps {
   isDownloading: boolean;
@@ -57,7 +59,9 @@ export default function MainPage({
 
     try {
       await invoke('process_boosty_url_gui', { input: url });
+      toast.success('Загрузка завершена');
     } catch (e) {
+      toast.error('Не удалось произвести загрузку');
       console.error(e);
     } finally {
       setDownloading(false);
@@ -67,13 +71,12 @@ export default function MainPage({
   return (
     <div className="flex flex-col gap-4 rounded-lg border border-(--border) bg-(--background) p-4 text-(--text)">
       <div className="flex gap-4">
-        <input
-          type="text"
+        <Input
           placeholder="Введите URL адрес блога или конкретного поста"
           value={url}
-          onChange={(e) => setUrl(e.target.value)}
+          onChange={(value) => setUrl(String(value))}
           disabled={isDownloading}
-          className="flex-1 rounded-lg border border-(--border) bg-(--secondary-bg) p-2 text-(--text) focus:outline-none focus:ring-(--button-bg) focus:ring-2"
+          className="flex-1"
         />
         <Button onClick={startDownload} disabled={isDownloading || !url}>
           <DownloadIcon />

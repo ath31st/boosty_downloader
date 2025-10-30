@@ -5,6 +5,7 @@ interface InputProps {
   onChange: (value: string | number) => void;
   type?: 'text' | 'number' | 'password';
   disabled?: boolean;
+  placeholder?: string;
   className?: string;
 }
 
@@ -13,6 +14,7 @@ export function Input({
   onChange,
   type = 'text',
   disabled,
+  placeholder,
   className,
 }: InputProps) {
   return (
@@ -20,12 +22,13 @@ export function Input({
       type={type}
       value={value}
       disabled={disabled}
+      placeholder={placeholder}
       onChange={(e: ChangeEvent<HTMLInputElement>) =>
         type === 'number'
           ? onChange(Number(e.target.value))
           : onChange(e.target.value)
       }
-      className={`rounded-lg border border-(--border) bg-(--secondary-bg) p-1 text-(--text) focus:outline-none focus:ring-(--button-bg) focus:ring-2 ${className ?? ''}`}
+      className={`rounded-lg border border-(--border) bg-(--secondary-bg) p-2 text-(--text) focus:outline-none focus:ring-(--button-bg) focus:ring-2 ${className ?? ''}`}
     />
   );
 }
