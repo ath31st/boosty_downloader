@@ -1,7 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "boosty_downloader_gui",
-  "version": "0.1.0",
   "identifier": "sidim.doma.bd",
   "build": {
     "beforeDevCommand": "yarn dev",
