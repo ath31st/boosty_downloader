@@ -4,9 +4,12 @@ import { Label } from '../components/Label';
 import { ConfigLabel } from '../components/ConfigLabel';
 import { useConfig } from '@/hooks/useConfig';
 import { HintIcon } from '@/components/HintIcon';
+import { toast } from 'sonner';
+import { useConfigValidation } from '@/hooks/useValidateInputConfig';
 
 export default function ConfigPage() {
   const { config, handleChange, handleSave, isLoading, isSaving } = useConfig();
+  const { errors, validate } = useConfigValidation();
 
   if (isLoading || !config) {
     return (
@@ -15,6 +18,14 @@ export default function ConfigPage() {
       </div>
     );
   }
+
+  const handleSaveWithValidation = () => {
+    if (validate(config)) {
+      handleSave();
+    } else {
+      toast.error('Введены некорректные данные');
+    }
+  };
 
   return (
     <div className="flex flex-col items-center gap-6 rounded-lg border border-(--border) bg-(--background) p-4">
@@ -29,6 +40,9 @@ export default function ConfigPage() {
             className="ml-2 flex-1"
           />
         </Label>
+        {errors.posts_limit && (
+          <p className="text-(--error) text-sm">{errors.posts_limit}</p>
+        )}
 
         <Label>
           <HintIcon
@@ -56,7 +70,11 @@ export default function ConfigPage() {
             className="ml-2 flex-1"
           />
         </Label>
+        {errors.access_token && (
+          <p className="text-(--error) text-sm">{errors.access_token}</p>
+        )}
 
+        {/* refresh_token */}
         <Label>
           <HintIcon text="Токен для обновления токена доступа. Во время обновления токена доступа, обновляется и токен обновления" />
           <ConfigLabel label="Refresh token:" />
@@ -67,7 +85,11 @@ export default function ConfigPage() {
             className="ml-2 flex-1"
           />
         </Label>
+        {errors.refresh_token && (
+          <p className="text-(--error) text-sm">{errors.refresh_token}</p>
+        )}
 
+        {/* device_id */}
         <Label>
           <HintIcon text="Идентификатор клиента (вашего браузера). Обязательный компонент для использования токена обновления" />
           <ConfigLabel label="Device ID:" />
@@ -78,9 +100,16 @@ export default function ConfigPage() {
             className="ml-2 flex-1"
           />
         </Label>
+        {errors.device_id && (
+          <p className="text-(--error) text-sm">{errors.device_id}</p>
+        )}
       </div>
 
-      <Button className="w-50" onClick={handleSave} disabled={isSaving}>
+      <Button
+        className="w-50"
+        onClick={handleSaveWithValidation}
+        disabled={isSaving}
+      >
         {isSaving ? 'Сохраняем...' : 'Сохранить'}
       </Button>
     </div>
