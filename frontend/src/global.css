@@ -23,6 +23,10 @@
   --button-hover-bg: hsl(var(--hue), 25%, 30%);
   --border: hsl(var(--hue), 20%, 40%);
   --tooltip-bg: hsl(var(--hue), 25%, 15%);
+
+  --error: hsl(0, 70%, 55%);
+  --warning: hsl(40, 80%, 60%);
+  --success: hsl(140, 50%, 50%);
 }
 
 [data-theme="blue"] {
@@ -37,6 +41,10 @@
   --button-hover-bg: hsl(var(--hue), 55%, 35%);
   --border: hsl(var(--hue), 45%, 50%);
   --tooltip-bg: hsl(var(--hue), 25%, 15%);
+
+  --error: hsl(0, 70%, 55%);
+  --warning: hsl(40, 80%, 60%);
+  --success: hsl(140, 50%, 50%);
 }
 
 body {
