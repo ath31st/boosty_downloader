@@ -2,6 +2,7 @@ import { checkForUpdate } from '@/utils/checkForLatestVersion';
 import { getVersion } from '@tauri-apps/api/app';
 import { useEffect, useState } from 'react';
 import { HintIcon } from './HintIcon';
+import { isNewerVersion } from '@/utils/compareVersions';
 
 export const Header = () => {
   const [currentVersion, setCurrentVersion] = useState('');
@@ -19,6 +20,11 @@ export const Header = () => {
     })();
   }, []);
 
+  const hasUpdate =
+    latestVersion &&
+    currentVersion &&
+    isNewerVersion(latestVersion, currentVersion);
+
   return (
     <header className="relative mb-4 flex items-center justify-center">
       {currentVersion && (
@@ -31,7 +37,7 @@ export const Header = () => {
           {currentVersion}
         </a>
       )}
-      {latestVersion && latestVersion !== currentVersion && (
+      {hasUpdate && (
         <div className="absolute left-14">
           <HintIcon
             text={`Доступна новая версия приложения: ${latestVersion}`}
