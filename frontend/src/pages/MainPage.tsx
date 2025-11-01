@@ -10,6 +10,7 @@ import { OpenFolderButton } from '@/components/OpenFolderButton';
 import { DownloadIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import { Input } from '@/components/Input';
+import { useUrlValidation } from '@/hooks/useUrlValidation';
 
 interface MainPageProps {
   isDownloading: boolean;
@@ -24,7 +25,7 @@ export default function MainPage({
   const [logs, setLogs] = useState<LogMessage[]>([]);
   const [progress, setProgress] = useState({ current: 0, total: 0 });
   const [startTime, setStartTime] = useState<number | null>(null);
-
+  const { urlError, validateUrl } = useUrlValidation();
   const logsEndRef = useRef<HTMLDivElement>(null);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: crying linter with red text
@@ -51,6 +52,10 @@ export default function MainPage({
 
   const startDownload = async () => {
     if (!url) return;
+    if (!validateUrl(url)) {
+      toast.error('Введите корректный URL');
+      return;
+    }
 
     setLogs([]);
     setDownloading(true);
@@ -83,6 +88,8 @@ export default function MainPage({
         </Button>
         <OpenFolderButton />
       </div>
+
+      {urlError && <p className="text-(--error) text-sm">{urlError}</p>}
 
       <div className="h-70 overflow-y-auto rounded-lg border border-(--border) bg-(--secondary-bg) p-2">
         {logs.map((msg) => (
