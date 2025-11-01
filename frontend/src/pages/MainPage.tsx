@@ -1,16 +1,10 @@
-import { useState, useRef, useEffect } from 'react';
 import { Button } from '../components/Button';
-import { invoke } from '@tauri-apps/api/core';
-import { listen } from '@tauri-apps/api/event';
 import { DownloadProgress } from '@/components/DownloadProgress';
-import type { LogMessage } from '@/types/logMessage';
 import { FormatLog } from '@/components/FormatLog';
-import type { ProgressMessage } from '@/types/progressMessage';
 import { OpenFolderButton } from '@/components/OpenFolderButton';
 import { DownloadIcon } from 'lucide-react';
-import { toast } from 'sonner';
 import { Input } from '@/components/Input';
-import { useUrlValidation } from '@/hooks/useUrlValidation';
+import { useDownloadProcess } from '@/hooks/useDownloadProcess';
 
 interface MainPageProps {
   isDownloading: boolean;
@@ -21,57 +15,16 @@ export default function MainPage({
   isDownloading,
   setDownloading,
 }: MainPageProps) {
-  const [url, setUrl] = useState('');
-  const [logs, setLogs] = useState<LogMessage[]>([]);
-  const [progress, setProgress] = useState({ current: 0, total: 0 });
-  const [startTime, setStartTime] = useState<number | null>(null);
-  const { urlError, validateUrl } = useUrlValidation();
-  const logsEndRef = useRef<HTMLDivElement>(null);
-
-  // biome-ignore lint/correctness/useExhaustiveDependencies: crying linter with red text
-  useEffect(() => {
-    logsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [logs]);
-
-  useEffect(() => {
-    const unlistenLog = listen('log', (event) => {
-      const msg = event.payload as LogMessage;
-      setLogs((prev) => [...prev, msg]);
-    });
-
-    const unlistenProgress = listen('progress', (event) => {
-      const msg = event.payload as ProgressMessage;
-      setProgress(msg);
-    });
-
-    return () => {
-      unlistenLog.then((f) => f());
-      unlistenProgress.then((f) => f());
-    };
-  }, []);
-
-  const startDownload = async () => {
-    if (!url) return;
-    if (!validateUrl(url)) {
-      toast.error('Введите корректный URL');
-      return;
-    }
-
-    setLogs([]);
-    setDownloading(true);
-    setProgress({ current: 0, total: 0 });
-    setStartTime(Date.now());
-
-    try {
-      await invoke('process_boosty_url_gui', { input: url });
-      toast.success('Загрузка завершена');
-    } catch (e) {
-      toast.error('Не удалось произвести загрузку');
-      console.error(e);
-    } finally {
-      setDownloading(false);
-    }
-  };
+  const {
+    url,
+    setUrl,
+    urlError,
+    logs,
+    progress,
+    startTime,
+    startDownload,
+    logsEndRef,
+  } = useDownloadProcess(setDownloading);
 
   return (
     <div className="flex flex-col gap-4 rounded-lg border border-(--border) bg-(--background) p-4 text-(--text)">
