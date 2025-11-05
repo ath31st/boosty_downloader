@@ -1,6 +1,6 @@
 use crate::{cli, content_items_handler, file_handler};
 use anyhow::{Context, Result};
-use boosty_api::api_response::Post;
+use boosty_api::model::Post;
 use boosty_api::traits::{HasContent, HasTitle, IsAvailable};
 use std::path::PathBuf;
 

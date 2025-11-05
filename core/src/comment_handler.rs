@@ -2,8 +2,8 @@ use std::path::{Path, PathBuf};
 
 use anyhow::{Context, Result};
 use boosty_api::{
-    api_response::Comment,
     media_content::ContentItem,
+    model::Comment,
     traits::{HasContent, IsAvailable},
 };
 use chrono::{DateTime, Utc};
