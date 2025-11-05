@@ -3,16 +3,17 @@ use boosty_api::api_client::ApiClient;
 use std::time::Duration;
 use tokio::time::timeout;
 
+/// Check if the Boosty API is reachable
+///
+/// # Errors
+///
+/// Returns an error if the Boosty API is not reachable
 pub async fn check_api(client: &ApiClient) -> anyhow::Result<()> {
     let fake_blog = "nonexistent";
-    let fut = client.get_posts(fake_blog, 1);
+    let fut = client.get_posts(fake_blog, 1, None, None);
     match timeout(Duration::from_secs(5), fut).await {
-        Ok(Ok(_)) => {
-            Ok(())
-        }
-        Ok(Err(e)) => {
-            Err(e).with_context(|| "Failed to reach Boosty API")
-        }
+        Ok(Ok(_)) => Ok(()),
+        Ok(Err(e)) => Err(e).with_context(|| "Failed to reach Boosty API"),
         Err(_) => Err(anyhow::anyhow!("Timeout when connecting to Boosty API")),
     }
 }

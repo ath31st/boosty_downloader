@@ -95,10 +95,10 @@ pub async fn process_boosty_url(client: &ApiClient, cfg: &AppConfig, input: &str
     let result = match &parsed {
         parser::BoostyUrl::Blog(blog) => {
             let multiple = client
-                .get_posts(blog, cfg.posts_limit)
+                .get_posts(blog, cfg.posts_limit, None, None)
                 .await
                 .with_context(|| format!("Failed to fetch posts for blog '{blog}'"))?;
-            post_handler::PostsResult::Multiple(multiple.data)
+            post_handler::PostsResult::Multiple(multiple)
         }
         parser::BoostyUrl::Post { blog, post_id } => {
             let single = client
