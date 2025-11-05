@@ -34,7 +34,7 @@ export const Header = () => {
           rel="noopener noreferrer"
           className="absolute left-0 text-(--meta-text) text-sm hover:underline"
         >
-          {currentVersion}
+          v{currentVersion}
         </a>
       )}
       {hasUpdate && (

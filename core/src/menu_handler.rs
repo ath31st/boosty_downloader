@@ -2,11 +2,13 @@ use crate::comment_handler;
 use crate::config;
 use crate::config::AppConfig;
 use crate::log_error;
+use crate::log_warn;
 use crate::post_handler;
 use crate::{cli, parser};
 use anyhow::{Context, Result};
 use boosty_api::api_client::ApiClient;
 use boosty_api::traits::HasTitle;
+use boosty_api::traits::IsAvailable;
 
 pub async fn handle_menu(client: &ApiClient) -> Result<bool> {
     cli::show_menu();
@@ -111,6 +113,11 @@ pub async fn process_boosty_url(client: &ApiClient, cfg: &AppConfig, input: &str
 
     match &result {
         post_handler::PostsResult::Single(post) => {
+            if post.not_available() {
+                log_warn!("Post '{}' is not available, skipping.", post.id);
+                return Ok(());
+            }
+
             let comments = client
                 .get_all_comments(
                     &post.user.blog_url,
@@ -132,6 +139,11 @@ pub async fn process_boosty_url(client: &ApiClient, cfg: &AppConfig, input: &str
 
         post_handler::PostsResult::Multiple(posts) if !posts.is_empty() => {
             for post in posts {
+                if post.not_available() {
+                    log_warn!("Post '{}' is not available, skipping.", post.id);
+                    continue;
+                }
+
                 let comments = client
                     .get_all_comments(
                         &post.user.blog_url,
