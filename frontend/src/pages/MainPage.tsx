@@ -44,7 +44,7 @@ export default function MainPage({
 
       {urlError && <p className="text-(--error) text-sm">{urlError}</p>}
 
-      <div className="h-70 overflow-y-auto rounded-lg border border-(--border) bg-(--secondary-bg) p-2">
+      <div className="h-90 overflow-y-auto rounded-lg border border-(--border) bg-(--secondary-bg) p-2">
         {logs.map((msg) => (
           <p
             key={msg.message}

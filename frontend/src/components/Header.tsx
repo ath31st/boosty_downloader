@@ -3,8 +3,20 @@ import { getVersion } from '@tauri-apps/api/app';
 import { useEffect, useState } from 'react';
 import { HintIcon } from './HintIcon';
 import { isNewerVersion } from '@/utils/compareVersions';
+import type { Page } from '@/constants/pages';
+import { PageToggle } from './PageToggle';
 
-export const Header = () => {
+interface HeaderProps {
+  currentPage: Page;
+  setCurrentPage: (page: Page) => void;
+  isDownloading: boolean;
+}
+
+export function Header({
+  currentPage,
+  setCurrentPage,
+  isDownloading,
+}: HeaderProps) {
   const [currentVersion, setCurrentVersion] = useState('');
   const [latestVersion, setLatestVersion] = useState<string | undefined>(
     undefined,
@@ -32,21 +44,30 @@ export const Header = () => {
           href="https://github.com/ath31st/boosty_downloader/releases"
           target="_blank"
           rel="noopener noreferrer"
-          className="absolute left-0 text-(--meta-text) text-sm hover:underline"
+          className="absolute left-4 text-(--meta-text) text-sm hover:underline"
         >
           v{currentVersion}
         </a>
       )}
       {hasUpdate && (
-        <div className="absolute left-14">
+        <div className="absolute left-18">
           <HintIcon
             text={`Доступна новая версия приложения: ${latestVersion}`}
           />
         </div>
       )}
+
       <h1 className="flex-1 text-center font-bold text-2xl">
         Boosty Downloader
       </h1>
+
+      <div className="absolute top-0 right-4">
+        <PageToggle
+          currentPage={currentPage}
+          setCurrentPage={setCurrentPage}
+          isDownloading={isDownloading}
+        />
+      </div>
     </header>
   );
-};
+}

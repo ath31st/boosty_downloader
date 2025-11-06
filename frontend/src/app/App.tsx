@@ -3,7 +3,6 @@ import ConfigPage from '../pages/ConfigPage';
 import { useInitApp } from '@/hooks/useInitApp';
 import { useDownloadingContent } from '@/hooks/useDownloadingContent';
 import { Header } from '@/components/Header';
-import { PageTabs } from '@/components/PageTabs';
 import { Button } from '@/components/Button';
 
 export default function App() {
@@ -13,7 +12,11 @@ export default function App() {
 
   return (
     <main className="container mx-auto p-2">
-      <Header />
+      <Header
+        currentPage={currentPage}
+        setCurrentPage={setCurrentPage}
+        isDownloading={isDownloading}
+      />
 
       {!clientReady && (
         <p className="text-(--meta-text)">Инициализация клиента...</p>
@@ -29,22 +32,15 @@ export default function App() {
       )}
 
       {clientReady && !initFailed && (
-        <>
-          <PageTabs
-            setCurrentPage={setCurrentPage}
-            isDownloading={isDownloading}
-          />
-
-          <div className="w-full">
-            {currentPage === 'main' && (
-              <MainPage
-                setDownloading={setDownloading}
-                isDownloading={isDownloading}
-              />
-            )}
-            {currentPage === 'config' && <ConfigPage />}
-          </div>
-        </>
+        <div className="w-full">
+          {currentPage === 'main' && (
+            <MainPage
+              setDownloading={setDownloading}
+              isDownloading={isDownloading}
+            />
+          )}
+          {currentPage === 'config' && <ConfigPage />}
+        </div>
       )}
     </main>
   );
