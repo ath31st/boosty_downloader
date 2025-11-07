@@ -49,7 +49,10 @@ export function useDownloadProcess(setDownloading: (v: boolean) => void) {
     setDownloading(true);
 
     try {
-      await invoke('process_boosty_url_gui', { input: url });
+      await invoke('download_content', {
+        url,
+        offsetUrl: offsetUrl.trim() !== '' ? offsetUrl : undefined,
+      });
       toast.success('Загрузка завершена');
     } catch (e) {
       console.error(e);
