@@ -1,13 +1,16 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 import { toast } from 'sonner';
 import type { LogMessage } from '@/types/logMessage';
 import type { ProgressMessage } from '@/types/progressMessage';
 import { useUrlValidation } from '@/hooks/useUrlValidation';
+import { isBlogUrl } from '@/utils/isBlogUrl';
+import { isSameBlogUrl } from '@/utils/isSameBlogUrl';
 
 export function useDownloadProcess(setDownloading: (v: boolean) => void) {
   const [url, setUrl] = useState('');
+  const [offsetUrl, setOffsetUrl] = useState('');
   const [logs, setLogs] = useState<LogMessage[]>([]);
   const [progress, setProgress] = useState({ current: 0, total: 0 });
   const [startTime, setStartTime] = useState<number | null>(null);
@@ -56,14 +59,33 @@ export function useDownloadProcess(setDownloading: (v: boolean) => void) {
     }
   };
 
+  const isOffsetUrlDisabled = useMemo(() => {
+    if (!url) return true;
+    if (!isBlogUrl(url)) return true;
+    return false;
+  }, [url]);
+
+  const isDifferentBlogs = useMemo(() => {
+    if (!url || !offsetUrl) return false;
+    return !isSameBlogUrl(url, offsetUrl);
+  }, [url, offsetUrl]);
+
+  useEffect(() => {
+    if (isDifferentBlogs) toast.error('Введены разные блоги');
+  }, [isDifferentBlogs]);
+
   return {
     url,
+    offsetUrl,
     setUrl,
+    setOffsetUrl,
     urlError,
     logs,
     progress,
     startTime,
     startDownload,
     logsEndRef,
+    isOffsetUrlDisabled,
+    isDifferentBlogs,
   };
 }

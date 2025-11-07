@@ -28,7 +28,11 @@ export function Input({
           ? onChange(Number(e.target.value))
           : onChange(e.target.value)
       }
-      className={`rounded-lg border border-(--border) bg-(--secondary-bg) p-2 text-(--text) focus:outline-none focus:ring-(--button-bg) focus:ring-2 ${className ?? ''}`}
+      className={`rounded-lg border border-(--border) p-2 text-(--text) focus:outline-none focus:ring-(--button-bg) focus:ring-2 ${
+        disabled
+          ? 'cursor-not-allowed bg-(--secondary-bg) text-(--meta-text) opacity-50'
+          : 'bg-(--secondary-bg)'
+      } ${className ?? ''}`}
     />
   );
 }

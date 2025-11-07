@@ -17,34 +17,49 @@ export default function MainPage({
 }: MainPageProps) {
   const {
     url,
+    offsetUrl,
     setUrl,
-    urlError,
+    setOffsetUrl,
     logs,
     progress,
     startTime,
     startDownload,
     logsEndRef,
+    isOffsetUrlDisabled,
+    isDifferentBlogs,
   } = useDownloadProcess(setDownloading);
 
   return (
     <div className="flex flex-col gap-4 rounded-lg border border-(--border) bg-(--background) p-4 text-(--text)">
-      <div className="flex gap-4">
-        <Input
-          placeholder="Введите URL адрес блога или конкретного поста"
-          value={url}
-          onChange={(value) => setUrl(String(value))}
-          disabled={isDownloading}
-          className="flex-1"
-        />
-        <Button onClick={startDownload} disabled={isDownloading || !url}>
-          <DownloadIcon />
-        </Button>
-        <OpenFolderButton />
+      <div className="flex flex-1 flex-col gap-2">
+        <div className="flex flex-1 flex-row gap-4">
+          <Input
+            placeholder="URL адрес блога или конкретного поста"
+            value={url}
+            onChange={(value) => setUrl(String(value))}
+            disabled={isDownloading}
+            className="flex-1"
+          />
+          <Button
+            onClick={startDownload}
+            disabled={isDownloading || !url || isDifferentBlogs}
+          >
+            <DownloadIcon />
+          </Button>
+        </div>
+        <div className="flex flex-1 flex-row gap-4">
+          <Input
+            placeholder="URL адрес поста для отступа"
+            value={offsetUrl}
+            onChange={(value) => setOffsetUrl(String(value))}
+            disabled={isDownloading || isOffsetUrlDisabled}
+            className="flex-1"
+          />
+          <OpenFolderButton />
+        </div>
       </div>
 
-      {urlError && <p className="text-(--error) text-sm">{urlError}</p>}
-
-      <div className="h-90 overflow-y-auto rounded-lg border border-(--border) bg-(--secondary-bg) p-2">
+      <div className="h-80 overflow-y-auto rounded-lg border border-(--border) bg-(--secondary-bg) p-2">
         {logs.map((msg) => (
           <p
             key={msg.message}
