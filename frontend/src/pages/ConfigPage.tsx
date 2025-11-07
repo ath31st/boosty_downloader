@@ -74,11 +74,12 @@ export default function ConfigPage() {
           <p className="text-(--error) text-sm">{errors.access_token}</p>
         )}
 
-        {/* refresh_token */}
         <Label>
-          <HintIcon text="Токен для обновления токена доступа. Во время обновления токена доступа, обновляется и токен обновления" />
+          <HintIcon text="В текущей версии этот функционал временно отключен" />
+          {/* <HintIcon text="Токен для обновления токена доступа. Во время обновления токена доступа, обновляется и токен обновления" /> */}
           <ConfigLabel label="Refresh token:" />
           <Input
+            disabled
             type="text"
             value={config.refresh_token}
             onChange={(e) => handleChange('refresh_token', e)}
@@ -89,11 +90,12 @@ export default function ConfigPage() {
           <p className="text-(--error) text-sm">{errors.refresh_token}</p>
         )}
 
-        {/* device_id */}
         <Label>
-          <HintIcon text="Идентификатор клиента (вашего браузера). Обязательный компонент для использования токена обновления" />
+          <HintIcon text="В текущей версии этот функционал временно отключен" />
+          {/* <HintIcon text="Идентификатор клиента (вашего браузера). Обязательный компонент для использования токена обновления" /> */}
           <ConfigLabel label="Device ID:" />
           <Input
+            disabled
             type="text"
             value={config.device_id}
             onChange={(e) => handleChange('device_id', e)}

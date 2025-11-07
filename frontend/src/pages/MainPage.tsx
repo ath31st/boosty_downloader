@@ -5,6 +5,7 @@ import { OpenFolderButton } from '@/components/OpenFolderButton';
 import { DownloadIcon } from 'lucide-react';
 import { Input } from '@/components/Input';
 import { useDownloadProcess } from '@/hooks/useDownloadProcess';
+import { HintIcon } from '@/components/HintIcon';
 
 interface MainPageProps {
   isDownloading: boolean;
@@ -47,7 +48,7 @@ export default function MainPage({
             <DownloadIcon />
           </Button>
         </div>
-        <div className="flex flex-1 flex-row gap-4">
+        <div className="relative flex flex-1 flex-row gap-4">
           <Input
             placeholder="URL адрес поста для отступа"
             value={offsetUrl}
@@ -55,6 +56,22 @@ export default function MainPage({
             disabled={isDownloading || isOffsetUrlDisabled}
             className="flex-1"
           />
+
+          <div className="absolute top-3 right-20">
+            <HintIcon
+              size={20}
+              text={
+                <div className="whitespace-pre-wrap">
+                  ⚠️ Поле ввода разблокируется, если введен адрес блога, а не
+                  поста.
+                  {'\n'}В качестве отступа указывается ссылка на пост, ПОСЛЕ
+                  которого "вниз" по ленте будут загружаться посты в количестве,
+                  которое указано в настройках.
+                </div>
+              }
+            />
+          </div>
+
           <OpenFolderButton />
         </div>
       </div>

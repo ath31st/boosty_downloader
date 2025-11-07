@@ -50,7 +50,7 @@ export function useDownloadProcess(setDownloading: (v: boolean) => void) {
 
     try {
       await invoke('download_content', {
-        url,
+        url: url.trim(),
         offsetUrl: offsetUrl.trim() !== '' ? offsetUrl : undefined,
       });
       toast.success('Загрузка завершена');

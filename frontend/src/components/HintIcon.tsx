@@ -4,15 +4,16 @@ import type { ReactNode } from 'react';
 
 interface HintIconProps {
   text: ReactNode;
+  size?: number;
 }
 
-export function HintIcon({ text }: HintIconProps) {
+export function HintIcon({ text, size = 14 }: HintIconProps) {
   return (
     <Tooltip.Provider delayDuration={100}>
       <Tooltip.Root>
         <Tooltip.Trigger asChild>
           <Info
-            size={14}
+            size={size}
             className="mr-1 cursor-help text-(--meta-text) hover:text-(--text)"
           />
         </Tooltip.Trigger>
