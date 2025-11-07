@@ -1,3 +1,4 @@
+use crate::cli;
 use crate::comment_handler;
 use crate::config;
 use crate::config::AppConfig;
@@ -5,7 +6,7 @@ use crate::log_error;
 use crate::log_warn;
 use crate::parser::BoostyUrl;
 use crate::post_handler;
-use crate::{cli, parser};
+use crate::url_context;
 use anyhow::{Context, Result};
 use boosty_api::api_client::ApiClient;
 use boosty_api::traits::HasTitle;
@@ -19,10 +20,15 @@ pub async fn handle_menu(client: &ApiClient) -> Result<bool> {
         1 => {
             let cfg = config::load_config().await?;
             let input = cli::read_user_input(cli::ENTER_PATH);
-            let parsed_url = parser::parse_boosty_url(&input)
-                .with_context(|| format!("Failed to parse Boosty URL '{input}'"))?;
+            let offset_input = cli::read_user_input(cli::ENTER_OFFSET_PATH);
+            let offset_opt = if offset_input.trim().is_empty() {
+                None
+            } else {
+                Some(offset_input.as_str())
+            };
+            let ctx = url_context::build_url_context(&input, offset_opt)?;
 
-            if let Err(e) = process_boosty_url(client, &cfg, &parsed_url, None).await {
+            if let Err(e) = process_boosty_url(client, &cfg, &ctx.url, ctx.offset).await {
                 log_error!("{e}");
             };
         }

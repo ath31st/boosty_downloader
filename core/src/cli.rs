@@ -2,7 +2,9 @@ use crate::{file_handler::DownloadResult, log_error, log_info};
 use anyhow::Error;
 use std::collections::HashMap;
 
-pub const ENTER_PATH: &str = "Enter path to post or posts:";
+pub const ENTER_PATH: &str = "Enter path to blog or post:";
+pub const ENTER_OFFSET_PATH: &str =
+    "(OPTIONAL) Enter path to offset post or press enter for skipping:";
 pub const ENTER_ACCESS_TOKEN: &str = "Enter access token:";
 pub const ENTER_REFRESH_TOKEN: &str = "Enter refresh token:";
 pub const ENTER_CLIENT_ID: &str = "Enter client id:";
@@ -11,7 +13,7 @@ pub const ENTER_POSTS_LIMIT: &str = "Enter posts limit:";
 pub fn show_menu() {
     println!("1. Download content");
     println!("2. Enter access token");
-    println!("3. Enter refresh token and client id");
+    println!("3. Enter refresh token and client id (NOT ACTIVE IN THIS VERSION)");
     println!("4. Clear tokens and client id");
     println!("5. Change posts limit");
     println!("6. Show API client headers");
@@ -55,11 +57,6 @@ pub fn read_user_input(prompt: &str) -> String {
 
         if let Err(e) = std::io::stdin().read_line(&mut input) {
             error(&format!("Reading input: {e}"));
-            continue;
-        }
-
-        if input.trim().is_empty() {
-            warning("Input is empty");
             continue;
         }
 

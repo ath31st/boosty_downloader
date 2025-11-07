@@ -55,21 +55,13 @@ pub async fn download_content(
     let client = &state.client.as_ref().ok_or("Client not initialized")?;
     let cfg = &state.config;
 
-    let parsed_url = boosty_downloader_core::parse_boosty_url(&url).map_err(|e| {
-        log_error!("Failed to parse Boosty URL: {url}. Error: {e}");
-        e.to_string()
-    })?;
-
-    let parsed_offset_url = offset_url
-        .as_ref()
-        .map(|offset| boosty_downloader_core::parse_boosty_url(offset))
-        .transpose()
-        .map_err(|e| {
-            log_error!("Failed to parse Boosty URL. Error: {e}");
+    let ctx =
+        boosty_downloader_core::build_url_context(&url, offset_url.as_deref()).map_err(|e| {
+            log_error!("{e}");
             e.to_string()
         })?;
 
-    boosty_downloader_core::process_boosty_url(client, cfg, &parsed_url, parsed_offset_url)
+    boosty_downloader_core::process_boosty_url(client, cfg, &ctx.url, ctx.offset)
         .await
         .map_err(|e| {
             log_error!("{e}");
