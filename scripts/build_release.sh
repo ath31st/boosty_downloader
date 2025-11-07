@@ -40,7 +40,7 @@ build_crate() {
         echo "Saved: $OUTPUT_FILE"
 
         if [ "$is_tauri" = true ] && [[ "$TARGET" == *"windows"* ]]; then
-            WEBVIEW_DLL="$PREFIX/frontend/webview2-fixed/WebView2Loader.dll"
+            WEBVIEW_DLL="$PREFIX/src-tauri/webview2-lib/WebView2Loader.dll"
             ZIP_NAME="$OUTPUT_DIR/${crate_name}-${version}-windows-x86_64.zip"
 
             if [ -f "$WEBVIEW_DLL" ]; then
