@@ -25,7 +25,7 @@ pub fn run() {
             commands::get_config,
             commands::update_config,
             commands::init_client,
-            commands::process_boosty_url_gui,
+            commands::download_content,
             commands::get_exe_path
         ])
         .run(tauri::generate_context!())

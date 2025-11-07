@@ -17,6 +17,7 @@ pub use config::{AppConfig, CommentsConfig, apply_config, load_config, save_conf
 pub use console_logger::ConsoleLogger;
 pub use logger::{LogLevel, LogMessage, Logger, ProgressMessage, get_logger, set_logger};
 pub use menu_handler::{handle_menu, process_boosty_url};
+pub use parser::{BoostyUrl, parse_boosty_url};
 
 use anyhow::Result;
 use boosty_api::api_client::ApiClient;

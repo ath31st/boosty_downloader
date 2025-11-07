@@ -3,6 +3,7 @@ use crate::config;
 use crate::config::AppConfig;
 use crate::log_error;
 use crate::log_warn;
+use crate::parser::BoostyUrl;
 use crate::post_handler;
 use crate::{cli, parser};
 use anyhow::{Context, Result};
@@ -18,7 +19,10 @@ pub async fn handle_menu(client: &ApiClient) -> Result<bool> {
         1 => {
             let cfg = config::load_config().await?;
             let input = cli::read_user_input(cli::ENTER_PATH);
-            if let Err(e) = process_boosty_url(client, &cfg, &input).await {
+            let parsed_url = parser::parse_boosty_url(&input)
+                .with_context(|| format!("Failed to parse Boosty URL '{input}'"))?;
+
+            if let Err(e) = process_boosty_url(client, &cfg, &parsed_url, None).await {
                 log_error!("{e}");
             };
         }
@@ -88,19 +92,29 @@ pub async fn handle_menu(client: &ApiClient) -> Result<bool> {
     Ok(true)
 }
 
-pub async fn process_boosty_url(client: &ApiClient, cfg: &AppConfig, input: &str) -> Result<()> {
-    let parsed = parser::parse_boosty_url(input)
-        .with_context(|| format!("Failed to parse Boosty URL '{input}'"))?;
+pub async fn process_boosty_url(
+    client: &ApiClient,
+    cfg: &AppConfig,
+    url: &BoostyUrl,
+    offset_url: Option<BoostyUrl>,
+) -> Result<()> {
+    let offset: Option<String> = match offset_url {
+        Some(BoostyUrl::Post { blog, post_id }) => {
+            let offset_post = client.get_post(&blog, &post_id).await?;
+            Some(format!("{}:{}", offset_post.sort_order, offset_post.int_id))
+        }
+        _ => None,
+    };
 
-    let result = match &parsed {
-        parser::BoostyUrl::Blog(blog) => {
+    let result = match &url {
+        BoostyUrl::Blog(blog) => {
             let multiple = client
-                .get_posts(blog, cfg.posts_limit, None, None)
+                .get_posts(blog, cfg.posts_limit, None, offset)
                 .await
                 .with_context(|| format!("Failed to fetch posts for blog '{blog}'"))?;
             post_handler::PostsResult::Multiple(multiple)
         }
-        parser::BoostyUrl::Post { blog, post_id } => {
+        BoostyUrl::Post { blog, post_id } => {
             let single = client
                 .get_post(blog, post_id)
                 .await
@@ -167,13 +181,27 @@ pub async fn process_boosty_url(client: &ApiClient, cfg: &AppConfig, input: &str
         _ => {}
     }
 
-    post_handler::process_posts(result)
-        .await
-        .with_context(|| format!("Error while processing post content: {input}"))?;
+    post_handler::process_posts(result).await.with_context(|| {
+        format!(
+            "Error while processing post content: {}",
+            match &url {
+                BoostyUrl::Blog(blog) => blog,
+                BoostyUrl::Post { blog, .. } => blog,
+            }
+        )
+    })?;
 
     comment_handler::process_comments(comments_results)
         .await
-        .with_context(|| format!("Error while processing comments for post: {input}"))?;
+        .with_context(|| {
+            format!(
+                "Error while processing comments for post: {}",
+                match &url {
+                    BoostyUrl::Blog(blog) => blog,
+                    BoostyUrl::Post { blog, .. } => blog,
+                }
+            )
+        })?;
 
     Ok(())
 }

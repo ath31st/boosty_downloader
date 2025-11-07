@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use boosty_downloader_core::{log_error, log_info, AppConfig};
+use boosty_downloader_core::{AppConfig, log_error, log_info};
 use tauri::State;
 use tokio::sync::Mutex;
 
@@ -45,8 +45,9 @@ pub async fn init_client(state: State<'_, Arc<Mutex<AppState>>>) -> Result<(), S
 }
 
 #[tauri::command]
-pub async fn process_boosty_url_gui(
-    input: String,
+pub async fn download_content(
+    url: String,
+    offset_url: Option<String>,
     state: State<'_, Arc<Mutex<AppState>>>,
 ) -> Result<(), String> {
     let state = state.lock().await;
@@ -54,10 +55,26 @@ pub async fn process_boosty_url_gui(
     let client = &state.client.as_ref().ok_or("Client not initialized")?;
     let cfg = &state.config;
 
-    if let Err(err) = boosty_downloader_core::process_boosty_url(client, cfg, &input).await {
-        log_error!("{err}");
-        return Err(err.to_string());
-    }
+    let parsed_url = boosty_downloader_core::parse_boosty_url(&url).map_err(|e| {
+        log_error!("Failed to parse Boosty URL: {url}. Error: {e}");
+        e.to_string()
+    })?;
+
+    let parsed_offset_url = offset_url
+        .as_ref()
+        .map(|offset| boosty_downloader_core::parse_boosty_url(offset))
+        .transpose()
+        .map_err(|e| {
+            log_error!("Failed to parse Boosty URL. Error: {e}");
+            e.to_string()
+        })?;
+
+    boosty_downloader_core::process_boosty_url(client, cfg, &parsed_url, parsed_offset_url)
+        .await
+        .map_err(|e| {
+            log_error!("{e}");
+            e.to_string()
+        })?;
 
     Ok(())
 }
