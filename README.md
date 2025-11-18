@@ -81,7 +81,7 @@ Boosty Downloader - это portable приложение для загрузки
         3. Запустите приложение:
            ```bash
            ./boosty_downloader_cli-x.x.x-linux-x86_64
-```
+         ```
 
 ## Использование
 
