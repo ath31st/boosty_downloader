@@ -1,6 +1,6 @@
 import { Button } from '../components/Button';
 import { DownloadProgress } from '@/components/DownloadProgress';
-import { FormatLog } from '@/components/FormatLog';
+import { formatLog } from '@/components/FormatLog';
 import { OpenFolderButton } from '@/components/OpenFolderButton';
 import { DownloadIcon } from 'lucide-react';
 import { Input } from '@/components/Input';
@@ -83,7 +83,7 @@ export default function MainPage({
             ref={logsEndRef}
             className="text-(--meta-text) text-sm"
           >
-            {FormatLog(msg)}
+            {formatLog(msg)}
           </p>
         ))}
         <div ref={logsEndRef} />

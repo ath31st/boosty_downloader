@@ -1,6 +1,6 @@
 import type { LogMessage } from '@/types/logMessage';
 
-export function FormatLog(msg: LogMessage) {
+export function formatLog(msg: LogMessage) {
   let color = '';
 
   switch (msg.level) {
