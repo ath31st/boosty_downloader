@@ -14,7 +14,7 @@ pub(crate) mod progress_reporter;
 pub(crate) mod url_context;
 
 pub use cli::print_error;
-pub use config::{AppConfig, CommentsConfig, apply_config, load_config, save_config};
+pub use config::{AppConfig, CommentsConfig, load_config, save_config, sync_auth};
 pub use console_logger::ConsoleLogger;
 pub use logger::{LogLevel, LogMessage, Logger, ProgressMessage, get_logger, set_logger};
 pub use menu_handler::{handle_menu, process_boosty_url};
@@ -41,6 +41,7 @@ pub async fn make_client() -> Result<ApiClient> {
 
 pub async fn init_client(client: &ApiClient) -> Result<()> {
     checks::check_api(client).await?;
-    config::apply_config(client).await?;
+    let cfg = config::load_config().await?;
+    config::sync_auth(client, &cfg).await?;
     Ok(())
 }

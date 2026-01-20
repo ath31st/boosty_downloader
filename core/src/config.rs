@@ -106,12 +106,13 @@ where
     Ok(cfg)
 }
 
-pub async fn apply_config(client: &ApiClient) -> Result<()> {
-    let cfg = load_config().await?;
-
+pub async fn sync_auth(client: &ApiClient, cfg: &AppConfig) -> Result<()> {
     if !cfg.access_token.is_empty() {
         client.set_bearer_token(&cfg.access_token).await?;
         cli::access_token_set(&cfg.access_token);
+    } else {
+        client.clear_access_token().await;
+        cli::access_token_set("Access token cleared");
     }
 
     if !cfg.refresh_token.is_empty() && !cfg.device_id.is_empty() {
