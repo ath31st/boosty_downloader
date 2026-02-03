@@ -278,6 +278,31 @@ pub async fn prepare_folder_path_for_comments(post_folder_path: &Path) -> Result
     Ok(comments_folder_path)
 }
 
+pub async fn read_links_from_file(file_path: &Path) -> Result<Vec<String>> {
+    if !fs::try_exists(file_path).await? {
+        anyhow::bail!("File with links does not exist: '{}'", file_path.display());
+    }
+
+    let file = fs::File::open(file_path)
+        .await
+        .with_context(|| format!("Failed to open file: '{}'", file_path.display()))?;
+
+    let reader = BufReader::new(file);
+    let mut lines = reader.lines();
+    let mut links = Vec::new();
+
+    while let Some(line) = lines.next_line().await? {
+        let trimmed = line.trim();
+
+        if !trimmed.is_empty() {
+            links.push(trimmed.to_string());
+        }
+    }
+
+    log_info!("Read {} links", links.len());
+    Ok(links)
+}
+
 pub async fn process_file_and_markdown(
     folder_path: &Path,
     url: &str,
