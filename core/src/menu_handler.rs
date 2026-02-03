@@ -1,8 +1,12 @@
+use std::path::Path;
+
 use crate::cli;
 use crate::comment_handler;
 use crate::config;
 use crate::config::AppConfig;
+use crate::file_handler;
 use crate::log_error;
+use crate::log_info;
 use crate::log_warn;
 use crate::parser::BoostyUrl;
 use crate::post_handler;
@@ -19,7 +23,7 @@ pub async fn handle_menu(client: &ApiClient) -> Result<bool> {
     match selected_menu {
         1 => {
             let cfg = config::load_config().await?;
-            let input = cli::read_user_input(cli::ENTER_PATH);
+            let input = cli::read_user_input(cli::ENTER_URL);
             let offset_input = cli::read_user_input(cli::ENTER_OFFSET_PATH);
             let offset_opt = if offset_input.trim().is_empty() {
                 None
@@ -33,6 +37,14 @@ pub async fn handle_menu(client: &ApiClient) -> Result<bool> {
             };
         }
         2 => {
+            let cfg = config::load_config().await?;
+            let file_path_str = cli::read_user_input(cli::ENTER_URLS_FILE);
+
+            if let Err(e) = process_batch_file(client, &cfg, &file_path_str).await {
+                log_error!("Batch process failed: {e}");
+            }
+        }
+        3 => {
             let entered_token = cli::read_user_input(cli::ENTER_ACCESS_TOKEN);
             client.set_bearer_token(&entered_token).await?;
             config::update_config(|cfg| {
@@ -43,7 +55,7 @@ pub async fn handle_menu(client: &ApiClient) -> Result<bool> {
             .await
             .with_context(|| "Failed to update config")?;
         }
-        3 => {
+        4 => {
             let entered_token = cli::read_user_input(cli::ENTER_REFRESH_TOKEN);
             let entered_device_id = cli::read_user_input(cli::ENTER_CLIENT_ID);
             client
@@ -57,7 +69,7 @@ pub async fn handle_menu(client: &ApiClient) -> Result<bool> {
             .await
             .with_context(|| "Failed to update config")?;
         }
-        4 => {
+        5 => {
             client.clear_refresh_and_device_id().await;
             config::update_config(|cfg| {
                 cfg.access_token = String::new();
@@ -68,7 +80,7 @@ pub async fn handle_menu(client: &ApiClient) -> Result<bool> {
             .with_context(|| "Failed to clear tokens")?;
             cli::tokens_and_client_id_cleared();
         }
-        5 => {
+        6 => {
             let cfg = config::load_config().await?;
             let prompt = format!("{} (current: {}):", cli::ENTER_POSTS_LIMIT, cfg.posts_limit);
             let entered_posts_limit = cli::read_user_input(&prompt);
@@ -87,9 +99,9 @@ pub async fn handle_menu(client: &ApiClient) -> Result<bool> {
                 }
             }
         }
-        6 => cli::show_api_client_headers(&client.headers_as_map()),
-        7 => cli::show_config(&config::load_config().await?),
-        8 => {
+        7 => cli::show_api_client_headers(&client.headers_as_map()),
+        8 => cli::show_config(&config::load_config().await?),
+        9 => {
             cli::exit_message();
             return Ok(false);
         }
@@ -209,5 +221,34 @@ pub async fn process_boosty_url(
             )
         })?;
 
+    Ok(())
+}
+
+async fn process_batch_file(
+    client: &ApiClient,
+    cfg: &AppConfig,
+    file_path_str: &str,
+) -> Result<()> {
+    let file_path = Path::new(file_path_str);
+    let links = file_handler::read_links_from_file(file_path).await?;
+
+    log_info!("Starting batch processing of {} links...", links.len());
+
+    for link in links {
+        log_info!("Processing: {link}");
+
+        match url_context::build_url_context(&link, None) {
+            Ok(ctx) => {
+                if let Err(e) = process_boosty_url(client, cfg, &ctx.url, ctx.offset).await {
+                    log_error!("Error processing link '{}': {e}", link);
+                }
+            }
+            Err(e) => {
+                log_error!("Invalid link format '{}': {e}", link);
+            }
+        }
+    }
+
+    log_info!("Batch processing finished.");
     Ok(())
 }
