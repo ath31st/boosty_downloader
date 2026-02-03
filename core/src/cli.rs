@@ -2,7 +2,8 @@ use crate::{file_handler::DownloadResult, log_error, log_info};
 use anyhow::Error;
 use std::collections::HashMap;
 
-pub const ENTER_PATH: &str = "Enter path to blog or post:";
+pub const ENTER_URL: &str = "Enter URL:";
+pub const ENTER_URLS_FILE: &str = "Enter path to file with URLs:";
 pub const ENTER_OFFSET_PATH: &str =
     "(OPTIONAL) Enter path to offset post or press enter for skipping:";
 pub const ENTER_ACCESS_TOKEN: &str = "Enter access token:";
@@ -11,14 +12,15 @@ pub const ENTER_CLIENT_ID: &str = "Enter client id:";
 pub const ENTER_POSTS_LIMIT: &str = "Enter posts limit:";
 
 pub fn show_menu() {
-    println!("1. Download content");
-    println!("2. Enter access token");
-    println!("3. Enter refresh token and client id (NOT ACTIVE IN THIS VERSION)");
-    println!("4. Clear tokens and client id");
-    println!("5. Change posts limit");
-    println!("6. Show API client headers");
-    println!("7. Show config");
-    println!("8. Exit");
+    println!("1. Download content from URL (blog or post)");
+    println!("2. Download content from a list of URLs (file)");
+    println!("3. Enter access token");
+    println!("4. Enter refresh token and client id (NOT ACTIVE IN THIS VERSION)");
+    println!("5. Clear tokens and client id");
+    println!("6. Change posts limit");
+    println!("7. Show API client headers");
+    println!("8. Show config");
+    println!("9. Exit");
 }
 
 pub fn info(msg: &str) {
@@ -44,8 +46,8 @@ pub fn read_input_menu() -> i8 {
         }
 
         match input.trim().parse::<i8>() {
-            Ok(num) if (1..=8).contains(&num) => return num,
-            _ => error("Please enter a valid number between 1 and 8"),
+            Ok(num) if (1..=9).contains(&num) => return num,
+            _ => error("Please enter a valid number between 1 and 9"),
         }
     }
 }
