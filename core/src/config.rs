@@ -112,7 +112,6 @@ pub async fn sync_auth(client: &ApiClient, cfg: &AppConfig) -> Result<()> {
         cli::access_token_set(&cfg.access_token);
     } else {
         client.clear_access_token().await;
-        cli::access_token_set("Access token cleared");
     }
 
     if !cfg.refresh_token.is_empty() && !cfg.device_id.is_empty() {
