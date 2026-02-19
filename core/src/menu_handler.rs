@@ -33,7 +33,7 @@ pub async fn handle_menu(client: &ApiClient) -> Result<bool> {
             let ctx = url_context::build_url_context(&input, offset_opt)?;
 
             if let Err(e) = process_boosty_url(client, &cfg, &ctx.url, ctx.offset).await {
-                log_error!("{e}");
+                log_error!("{:#}", e);
             };
         }
         2 => {
@@ -41,7 +41,7 @@ pub async fn handle_menu(client: &ApiClient) -> Result<bool> {
             let file_path_str = cli::read_user_input(cli::ENTER_URLS_FILE);
 
             if let Err(e) = process_batch_file(client, &cfg, &file_path_str).await {
-                log_error!("Batch process failed: {e}");
+                log_error!("Batch process failed: {:#}", e);
             }
         }
         3 => {
@@ -95,7 +95,7 @@ pub async fn handle_menu(client: &ApiClient) -> Result<bool> {
                         .with_context(|| "Failed to update posts limit")?;
                 }
                 Err(e) => {
-                    log_error!("{e}");
+                    log_error!("{:#}", e);
                 }
             }
         }
