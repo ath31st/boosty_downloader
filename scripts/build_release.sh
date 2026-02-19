@@ -2,7 +2,7 @@
 set -euo pipefail
 
 TARGETS=("x86_64-unknown-linux-gnu" "x86_64-pc-windows-gnu")
-OUTPUT_DIR="$HOME/SHARE"
+OUTPUT_DIR="/mnt/dev/releases/"
 PREFIX="boosty_downloader"
 mkdir -p "$OUTPUT_DIR"
 
