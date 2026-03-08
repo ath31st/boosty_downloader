@@ -9,13 +9,29 @@ import { isBlogUrl } from '@/utils/isBlogUrl';
 import { isSameBlogUrl } from '@/utils/isSameBlogUrl';
 
 export function useDownloadProcess(setDownloading: (v: boolean) => void) {
-  const [url, setUrl] = useState('');
-  const [offsetUrl, setOffsetUrl] = useState('');
+  const [url, setUrl] = useState(() => {
+    if (typeof window === 'undefined') return '';
+    return sessionStorage.getItem('url') ?? '';
+  });
+
+  const [offsetUrl, setOffsetUrl] = useState(() => {
+    if (typeof window === 'undefined') return '';
+    return sessionStorage.getItem('offsetUrl') ?? '';
+  });
+
   const [logs, setLogs] = useState<LogMessage[]>([]);
   const [progress, setProgress] = useState({ current: 0, total: 0 });
   const [startTime, setStartTime] = useState<number | null>(null);
   const { urlError, validateUrl } = useUrlValidation();
   const logsEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (url) sessionStorage.setItem('url', url);
+  }, [url]);
+
+  useEffect(() => {
+    if (offsetUrl) sessionStorage.setItem('offsetUrl', offsetUrl);
+  }, [offsetUrl]);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: crying linter with red text
   useEffect(() => {
