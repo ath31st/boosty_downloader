@@ -1,7 +1,10 @@
 use anyhow::{Context, Result};
 use boosty_api::api_client::ApiClient;
 use serde::{Deserialize, Serialize};
-use std::path::{Path, PathBuf};
+use std::{
+    env,
+    path::{Path, PathBuf},
+};
 use tokio::fs;
 
 use crate::cli;
@@ -13,6 +16,7 @@ pub struct AppConfig {
     pub refresh_token: String,
     pub device_id: String,
     pub comments: CommentsConfig,
+    pub download_path: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -35,6 +39,7 @@ impl Default for AppConfig {
                 // top or bottom
                 order: Some("bottom".to_string()),
             },
+            download_path: None,
         }
     }
 }
@@ -91,6 +96,16 @@ async fn reset_config(path: &Path) -> Result<AppConfig> {
     let default = AppConfig::default();
     save_config(&default).await?;
     Ok(default)
+}
+
+pub fn get_download_path(config: &AppConfig) -> PathBuf {
+    match &config.download_path {
+        Some(path) => PathBuf::from(path),
+        None => {
+            let exe = env::current_exe().unwrap_or_else(|_| PathBuf::from("."));
+            exe.parent().unwrap_or_else(|| Path::new(".")).to_path_buf()
+        }
+    }
 }
 
 pub async fn update_config<F>(f: F) -> Result<AppConfig>
