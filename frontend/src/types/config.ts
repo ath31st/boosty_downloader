@@ -10,4 +10,5 @@ export interface AppConfig {
   refresh_token: string;
   device_id: string;
   comments: CommentsConfig;
+  download_path: string | null;
 }
