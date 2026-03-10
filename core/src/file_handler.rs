@@ -53,21 +53,21 @@ async fn append_hash_to_file(path: &Path, hash: &str) -> Result<()> {
     Ok(())
 }
 
-async fn ensure_blog_folder(blog_name: &str) -> Result<PathBuf> {
-    let blog_path = Path::new(blog_name);
-    let exists = fs::try_exists(blog_path)
+async fn ensure_blog_folder(blog_name: &str, base_path: &Path) -> Result<PathBuf> {
+    let blog_path = base_path.join(blog_name);
+    let exists = fs::try_exists(&blog_path)
         .await
         .with_context(|| format!("Failed to check if blog folder '{blog_name}' exists"))?;
     if !exists {
-        fs::create_dir_all(blog_path)
+        fs::create_dir_all(&blog_path)
             .await
             .with_context(|| format!("Failed to create blog folder '{blog_name}'"))?;
     }
-    Ok(blog_path.to_path_buf())
+    Ok(blog_path)
 }
 
-async fn ensure_post_folder(blog_name: &str, folder_name: &str) -> Result<PathBuf> {
-    let blog_path = ensure_blog_folder(blog_name).await?;
+async fn ensure_post_folder(blog_name: &str, folder_name: &str, base_path: &Path) -> Result<PathBuf> {
+    let blog_path = ensure_blog_folder(blog_name, base_path).await?;
     let post_path = blog_path.join(folder_name);
     let exists = fs::try_exists(&post_path).await.with_context(|| {
         format!(
@@ -245,6 +245,7 @@ pub async fn prepare_folder_path(
     blog_name: &str,
     post_title: &str,
     created_at: i64,
+    base_path: &Path,
 ) -> Result<PathBuf> {
     let safe_post_title = sanitize_name(post_title);
 
@@ -254,7 +255,7 @@ pub async fn prepare_folder_path(
     let date_str = datetime.format("%Y.%m.%d").to_string();
     let folder_name = format!("{date_str} {safe_post_title}");
 
-    let post_folder_path: PathBuf = ensure_post_folder(blog_name, &folder_name)
+    let post_folder_path: PathBuf = ensure_post_folder(blog_name, &folder_name, base_path)
         .await
         .with_context(|| {
             format!("Failed to create folder for post '{post_title}' in blog '{blog_name}'")
