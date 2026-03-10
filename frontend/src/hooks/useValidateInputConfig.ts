@@ -25,6 +25,12 @@ export function useConfigValidation() {
     checkToken('refresh_token', 'Refresh token');
     checkToken('device_id', 'Device ID');
 
+    if (config.download_path?.trim()) {
+      if (config.download_path.trim().length > 500) {
+        newErrors.download_path = 'Путь слишком длинный';
+      }
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };

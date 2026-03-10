@@ -8,7 +8,14 @@ import { toast } from 'sonner';
 import { useConfigValidation } from '@/hooks/useValidateInputConfig';
 
 export default function ConfigPage() {
-  const { config, handleChange, handleSave, isLoading, isSaving } = useConfig();
+  const {
+    config,
+    handleChange,
+    handleSave,
+    isLoading,
+    isSaving,
+    downloadPath,
+  } = useConfig();
   const { errors, validate } = useConfigValidation();
 
   if (isLoading || !config) {
@@ -105,6 +112,28 @@ export default function ConfigPage() {
         {errors.device_id && (
           <p className="text-(--error) text-sm">{errors.device_id}</p>
         )}
+
+        <Label>
+          <HintIcon text="Путь для сохранения загружаемого контента. Оставьте пустым для использования папки по умолчанию" />
+          <ConfigLabel label="Путь сохранения:" />
+          <Input
+            type="text"
+            value={config.download_path ?? ''}
+            onChange={(e) => handleChange('download_path', e)}
+            className="ml-2 flex-1"
+            placeholder="По умолчанию: папка с приложением"
+          />
+        </Label>
+        {errors.download_path && (
+          <p className="text-(--error) text-sm">{errors.download_path}</p>
+        )}
+
+        <Label className="ml-5">
+          <ConfigLabel label="Текущий путь:" />
+          <div>
+            <span className="font-mono">{downloadPath || '—'}</span>
+          </div>
+        </Label>
       </div>
 
       <Button

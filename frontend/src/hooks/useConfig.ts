@@ -7,6 +7,7 @@ export function useConfig() {
   const [config, setConfig] = useState<AppConfig | null>(null);
   const [isLoading, setLoading] = useState(true);
   const [isSaving, setSaving] = useState(false);
+  const [downloadPath, setDownloadPath] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -21,6 +22,18 @@ export function useConfig() {
     })();
   }, []);
 
+  useEffect(() => {
+    if (!isLoading && config) {
+      invoke<string>('get_download_path')
+        .then((path) => setDownloadPath(path))
+        .catch((err) => {
+          console.error('Failed to get download path:', err);
+          toast.error('Не удалось получить путь сохранения');
+          setDownloadPath('ERROR');
+        });
+    }
+  }, [isLoading, config]);
+
   const handleChange = (key: keyof AppConfig, value: unknown) => {
     if (!config) return;
     setConfig({ ...config, [key]: value });
@@ -30,6 +43,12 @@ export function useConfig() {
     if (!config) return;
     setSaving(true);
     try {
+      if (config.download_path === null || config.download_path === '') {
+        config.download_path = null;
+      } else {
+        config.download_path = config.download_path.trim();
+      }
+
       await invoke('update_config', { newConfig: config });
       console.log('Config updated');
       toast.success('Настройки сохранены');
@@ -41,5 +60,13 @@ export function useConfig() {
     }
   };
 
-  return { config, setConfig, handleChange, handleSave, isLoading, isSaving };
+  return {
+    config,
+    setConfig,
+    handleChange,
+    handleSave,
+    isLoading,
+    isSaving,
+    downloadPath,
+  };
 }
