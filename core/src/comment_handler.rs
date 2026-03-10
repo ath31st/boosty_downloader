@@ -17,7 +17,7 @@ pub struct CommentsResult {
     pub created_at: i64,
 }
 
-pub async fn process_comments(results: Vec<CommentsResult>, donwload_path: &Path) -> Result<()> {
+pub async fn process_comments(results: Vec<CommentsResult>, download_path: &Path) -> Result<()> {
     if results.is_empty() {
         return Ok(());
     }
@@ -29,7 +29,7 @@ pub async fn process_comments(results: Vec<CommentsResult>, donwload_path: &Path
             &result.blog_url,
             post_title,
             result.created_at,
-            donwload_path,
+            download_path,
         )
         .await?;
 
