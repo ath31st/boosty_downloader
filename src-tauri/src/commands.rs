@@ -31,6 +31,7 @@ pub async fn update_config(
     .await
     .map_err(|e| e.to_string())?;
     dbg!(&state.client);
+    dbg!(&state.config);
     Ok(())
 }
 
@@ -81,8 +82,9 @@ pub async fn download_content(
 }
 
 #[tauri::command]
-pub fn get_exe_path() -> Result<String, String> {
-    std::env::current_exe()
-        .map(|p| p.to_string_lossy().to_string())
-        .map_err(|e| e.to_string())
+pub async fn get_download_path(state: State<'_, Arc<Mutex<AppState>>>) -> Result<String, String> {
+    let state = state.lock().await;
+    let config = &state.config;
+    let path = boosty_downloader_core::get_download_path(config);
+    Ok(path.to_string_lossy().to_string())
 }

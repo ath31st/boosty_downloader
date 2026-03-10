@@ -26,7 +26,7 @@ pub fn run() {
             commands::update_config,
             commands::init_client,
             commands::download_content,
-            commands::get_exe_path
+            commands::get_download_path,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
