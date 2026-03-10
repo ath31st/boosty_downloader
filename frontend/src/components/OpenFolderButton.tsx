@@ -6,7 +6,7 @@ import { FolderOpen } from 'lucide-react';
 
 export function OpenFolderButton() {
   const handleOpenFolder = async () => {
-    const exePathString = (await invoke('get_exe_path', {})) as string;
+    const exePathString = (await invoke('get_download_path', {})) as string;
     const exePath = await resolve(exePathString);
     await revealItemInDir(exePath);
   };
