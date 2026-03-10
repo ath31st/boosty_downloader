@@ -99,9 +99,32 @@ pub async fn handle_menu(client: &ApiClient) -> Result<bool> {
                 }
             }
         }
-        7 => cli::show_api_client_headers(&client.headers_as_map()),
-        8 => cli::show_config(&config::load_config().await?),
-        9 => {
+        7 => {
+            let cfg = config::load_config().await?;
+            let current_path = cfg
+                .download_path
+                .as_deref()
+                .unwrap_or("(default - binary folder)");
+            let prompt = format!("{} (current: {})", cli::ENTER_DOWNLOAD_PATH, current_path);
+            let entered_path = cli::read_user_input(&prompt);
+
+            let new_path = if entered_path.trim().is_empty() {
+                None
+            } else {
+                let path = std::path::Path::new(&entered_path);
+                if !path.exists() {
+                    log_info!("Path does not exist, will try to create on download");
+                }
+                Some(entered_path)
+            };
+
+            config::update_config(|cfg| cfg.download_path = new_path)
+                .await
+                .with_context(|| "Failed to update download path")?;
+        }
+        8 => cli::show_api_client_headers(&client.headers_as_map()),
+        9 => cli::show_config(&config::load_config().await?),
+        10 => {
             cli::exit_message();
             return Ok(false);
         }
