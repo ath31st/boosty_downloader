@@ -14,7 +14,7 @@ pub(crate) mod progress_reporter;
 pub(crate) mod url_context;
 
 pub use cli::print_error;
-pub use config::{AppConfig, CommentsConfig, load_config, save_config, sync_auth};
+pub use config::{AppConfig, CommentsConfig, load_config, save_config, sync_auth, get_download_path};
 pub use console_logger::ConsoleLogger;
 pub use logger::{LogLevel, LogMessage, Logger, ProgressMessage, get_logger, set_logger};
 pub use menu_handler::{handle_menu, process_boosty_url};
