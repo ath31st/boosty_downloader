@@ -17,7 +17,7 @@ pub struct CommentsResult {
     pub created_at: i64,
 }
 
-pub async fn process_comments(results: Vec<CommentsResult>) -> Result<()> {
+pub async fn process_comments(results: Vec<CommentsResult>, donwload_path: &Path) -> Result<()> {
     if results.is_empty() {
         return Ok(());
     }
@@ -25,9 +25,13 @@ pub async fn process_comments(results: Vec<CommentsResult>) -> Result<()> {
     for result in results {
         let post_title = &result.safe_post_title;
 
-        let post_folder_path: PathBuf =
-            file_handler::prepare_folder_path(&result.blog_url, post_title, result.created_at)
-                .await?;
+        let post_folder_path: PathBuf = file_handler::prepare_folder_path(
+            &result.blog_url,
+            post_title,
+            result.created_at,
+            donwload_path,
+        )
+        .await?;
 
         let comments_folder_path: PathBuf =
             file_handler::prepare_folder_path_for_comments(&post_folder_path).await?;

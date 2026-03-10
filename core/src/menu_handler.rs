@@ -199,17 +199,21 @@ pub async fn process_boosty_url(
         _ => {}
     }
 
-    post_handler::process_posts(result).await.with_context(|| {
-        format!(
-            "Error while processing post content: {}",
-            match &url {
-                BoostyUrl::Blog(blog) => blog,
-                BoostyUrl::Post { blog, .. } => blog,
-            }
-        )
-    })?;
+    let download_path = &config::get_download_path(cfg);
 
-    comment_handler::process_comments(comments_results)
+    post_handler::process_posts(result, download_path)
+        .await
+        .with_context(|| {
+            format!(
+                "Error while processing post content: {}",
+                match &url {
+                    BoostyUrl::Blog(blog) => blog,
+                    BoostyUrl::Post { blog, .. } => blog,
+                }
+            )
+        })?;
+
+    comment_handler::process_comments(comments_results, download_path)
         .await
         .with_context(|| {
             format!(

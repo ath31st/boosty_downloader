@@ -2,24 +2,24 @@ use crate::{cli, content_items_handler, file_handler};
 use anyhow::{Context, Result};
 use boosty_api::model::Post;
 use boosty_api::traits::{HasContent, HasTitle, IsAvailable};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 pub enum PostsResult {
     Multiple(Vec<Post>),
     Single(Box<Post>),
 }
 
-pub async fn process_posts(result: PostsResult) -> Result<()> {
+pub async fn process_posts(result: PostsResult, download_path: &Path) -> Result<()> {
     match result {
         PostsResult::Multiple(posts) => {
             for post in posts {
-                process(&post)
+                process(&post, download_path)
                     .await
                     .with_context(|| format!("Error processing post '{}'", post.safe_title()))?;
             }
         }
         PostsResult::Single(post) => {
-            process(&post)
+            process(&post, download_path)
                 .await
                 .with_context(|| format!("Error processing post '{}'", post.safe_title()))?;
         }
@@ -27,7 +27,7 @@ pub async fn process_posts(result: PostsResult) -> Result<()> {
     Ok(())
 }
 
-async fn process(post: &Post) -> Result<()> {
+async fn process(post: &Post, download_path: &Path) -> Result<()> {
     if !check_available_post(post) {
         return Ok(());
     }
@@ -36,7 +36,8 @@ async fn process(post: &Post) -> Result<()> {
     let blog_name = &post.user.blog_url;
 
     let post_folder_path: PathBuf =
-        file_handler::prepare_folder_path(blog_name, post_title, post.created_at).await?;
+        file_handler::prepare_folder_path(blog_name, post_title, post.created_at, download_path)
+            .await?;
 
     let items = post.extract_content();
 
