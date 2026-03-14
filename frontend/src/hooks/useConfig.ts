@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { invoke } from '@tauri-apps/api/core';
+import { open } from '@tauri-apps/plugin-dialog';
 import type { AppConfig } from '@/types/config';
 import { toast } from 'sonner';
 
@@ -39,17 +40,34 @@ export function useConfig() {
     setConfig({ ...config, [key]: value });
   };
 
+  const handleSelectDirectory = async () => {
+    try {
+      const selected = await open({
+        directory: true,
+        multiple: false,
+        defaultPath: config?.download_path || undefined,
+      });
+
+      if (selected && typeof selected === 'string') {
+        handleChange('download_path', selected);
+      }
+    } catch (err) {
+      console.error('Failed to open directory dialog:', err);
+      toast.error('Не удалось открыть диалог выбора папки');
+    }
+  };
+
   const handleSave = async () => {
     if (!config) return;
     setSaving(true);
     try {
-      if (config.download_path === null || config.download_path === '') {
-        config.download_path = null;
-      } else {
-        config.download_path = config.download_path.trim();
-      }
+      const finalConfig = {
+        ...config,
+        download_path: config.download_path?.trim() || null
+      };
 
-      await invoke('update_config', { newConfig: config });
+      await invoke('update_config', { newConfig: finalConfig });
+      setDownloadPath(finalConfig.download_path);
       console.log('Config updated');
       toast.success('Настройки сохранены');
     } catch (err) {
@@ -68,5 +86,6 @@ export function useConfig() {
     isLoading,
     isSaving,
     downloadPath,
+    handleSelectDirectory
   };
 }

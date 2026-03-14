@@ -6,6 +6,7 @@ import { useConfig } from '@/hooks/useConfig';
 import { HintIcon } from '@/components/HintIcon';
 import { toast } from 'sonner';
 import { useConfigValidation } from '@/hooks/useValidateInputConfig';
+import { FolderOpen } from 'lucide-react';
 
 export default function ConfigPage() {
   const {
@@ -15,6 +16,7 @@ export default function ConfigPage() {
     isLoading,
     isSaving,
     downloadPath,
+    handleSelectDirectory,
   } = useConfig();
   const { errors, validate } = useConfigValidation();
 
@@ -114,19 +116,23 @@ export default function ConfigPage() {
         )}
 
         <Label>
-          <HintIcon text="Путь для сохранения загружаемого контента. Оставьте пустым для использования папки по умолчанию" />
+          <HintIcon text="Путь для сохранения загружаемого контента. Выберите папку или введите путь вручную." />
           <ConfigLabel label="Путь сохранения:" />
-          <Input
-            type="text"
-            value={config.download_path ?? ''}
-            onChange={(e) => handleChange('download_path', e)}
-            className="ml-2 flex-1"
-            placeholder="По умолчанию: папка с приложением"
-          />
+          <div className="ml-2 flex flex-1 gap-2">
+            {' '}
+            {/* Обертка для инпута и кнопки */}
+            <Input
+              type="text"
+              value={config.download_path ?? ''}
+              onChange={(e) => handleChange('download_path', e)}
+              className="flex-1"
+              placeholder="По умолчанию: папка с приложением"
+            />
+            <Button className="px-3" onClick={handleSelectDirectory}>
+              <FolderOpen size={16} />
+            </Button>
+          </div>
         </Label>
-        {errors.download_path && (
-          <p className="text-(--error) text-sm">{errors.download_path}</p>
-        )}
 
         <Label className="ml-5">
           <ConfigLabel label="Текущий путь:" />
