@@ -16,6 +16,8 @@
         }
       ]
     },
-    "fs:default"
+    "fs:default",
+    "dialog:default",
+    "dialog:allow-open"
   ]
 }

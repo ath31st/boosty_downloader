@@ -13,6 +13,7 @@ pub fn run() {
     let state = Arc::new(Mutex::new(AppState::default()));
 
     tauri::Builder::default()
+        .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
         .setup(|app| {
             let logger = tauri_logger::TauriLogger::new(app.handle().clone());
