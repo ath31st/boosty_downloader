@@ -122,9 +122,22 @@ pub async fn handle_menu(client: &ApiClient) -> Result<bool> {
                 .await
                 .with_context(|| "Failed to update download path")?;
         }
-        8 => cli::show_api_client_headers(&client.headers_as_map()),
-        9 => cli::show_config(&config::load_config().await?),
-        10 => {
+        8 => {
+            config::update_config(|cfg| {
+                cfg.comments.enabled = !cfg.comments.enabled;
+            })
+            .await
+            .with_context(|| "Failed to toggle comments")?;
+            let status = if config::load_config().await.unwrap().comments.enabled {
+                "enabled"
+            } else {
+                "disabled"
+            };
+            cli::comments_toggled(status);
+        }
+        9 => cli::show_api_client_headers(&client.headers_as_map()),
+        10 => cli::show_config(&config::load_config().await?),
+        11 => {
             cli::exit_message();
             return Ok(false);
         }
@@ -166,37 +179,13 @@ pub async fn process_boosty_url(
 
     let mut comments_results = Vec::new();
 
-    match &result {
-        post_handler::PostsResult::Single(post) => {
-            if post.not_available() {
-                log_warn!("Post '{}' is not available, skipping.", post.id);
-                return Ok(());
-            }
-
-            let comments = client
-                .get_all_comments(
-                    &post.user.blog_url,
-                    &post.id,
-                    cfg.comments.limit,
-                    cfg.comments.reply_limit,
-                    cfg.comments.order.as_deref(),
-                )
-                .await
-                .with_context(|| format!("Failed to fetch comments for post '{}'", post.id))?;
-
-            comments_results.push(comment_handler::CommentsResult {
-                comments,
-                safe_post_title: post.safe_title(),
-                created_at: post.created_at,
-                blog_url: post.user.blog_url.clone(),
-            });
-        }
-
-        post_handler::PostsResult::Multiple(posts) if !posts.is_empty() => {
-            for post in posts {
+    // Загружаем комментарии только если они включены в настройках
+    if cfg.comments.enabled {
+        match &result {
+            post_handler::PostsResult::Single(post) => {
                 if post.not_available() {
                     log_warn!("Post '{}' is not available, skipping.", post.id);
-                    continue;
+                    return Ok(());
                 }
 
                 let comments = client
@@ -217,9 +206,38 @@ pub async fn process_boosty_url(
                     blog_url: post.user.blog_url.clone(),
                 });
             }
-        }
 
-        _ => {}
+            post_handler::PostsResult::Multiple(posts) if !posts.is_empty() => {
+                for post in posts {
+                    if post.not_available() {
+                        log_warn!("Post '{}' is not available, skipping.", post.id);
+                        continue;
+                    }
+
+                    let comments = client
+                        .get_all_comments(
+                            &post.user.blog_url,
+                            &post.id,
+                            cfg.comments.limit,
+                            cfg.comments.reply_limit,
+                            cfg.comments.order.as_deref(),
+                        )
+                        .await
+                        .with_context(|| {
+                            format!("Failed to fetch comments for post '{}'", post.id)
+                        })?;
+
+                    comments_results.push(comment_handler::CommentsResult {
+                        comments,
+                        safe_post_title: post.safe_title(),
+                        created_at: post.created_at,
+                        blog_url: post.user.blog_url.clone(),
+                    });
+                }
+            }
+
+            _ => {}
+        }
     }
 
     let download_path = &config::get_download_path(cfg);
