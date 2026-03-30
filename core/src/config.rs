@@ -21,6 +21,7 @@ pub struct AppConfig {
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct CommentsConfig {
+    pub enabled: bool,
     pub reply_limit: Option<u32>,
     pub limit: Option<u32>,
     pub order: Option<String>,
@@ -34,6 +35,7 @@ impl Default for AppConfig {
             refresh_token: String::new(),
             device_id: String::new(),
             comments: CommentsConfig {
+                enabled: true,
                 reply_limit: Some(10),
                 limit: Some(300),
                 // top or bottom

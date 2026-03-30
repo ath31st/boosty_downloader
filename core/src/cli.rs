@@ -10,7 +10,8 @@ pub const ENTER_ACCESS_TOKEN: &str = "Enter access token:";
 pub const ENTER_REFRESH_TOKEN: &str = "Enter refresh token:";
 pub const ENTER_CLIENT_ID: &str = "Enter client id:";
 pub const ENTER_POSTS_LIMIT: &str = "Enter posts limit:";
-pub const ENTER_DOWNLOAD_PATH: &str = "Enter download path (or press enter to use default - binary folder):";
+pub const ENTER_DOWNLOAD_PATH: &str =
+    "Enter download path (or press enter to use default - binary folder):";
 
 pub fn show_menu() {
     println!("1. Download content from URL (blog or post)");
@@ -20,9 +21,10 @@ pub fn show_menu() {
     println!("5. Clear tokens and client id");
     println!("6. Change posts limit");
     println!("7. Change download path");
-    println!("8. Show API client headers");
-    println!("9. Show config");
-    println!("10. Exit");
+    println!("8. Toggle comments download");
+    println!("9. Show API client headers");
+    println!("10. Show config");
+    println!("11. Exit");
 }
 
 pub fn info(msg: &str) {
@@ -48,8 +50,8 @@ pub fn read_input_menu() -> i8 {
         }
 
         match input.trim().parse::<i8>() {
-            Ok(num) if (1..=10).contains(&num) => return num,
-            _ => error("Please enter a valid number between 1 and 10"),
+            Ok(num) if (1..=11).contains(&num) => return num,
+            _ => error("Please enter a valid number between 1 and 11"),
         }
     }
 }
@@ -125,7 +127,13 @@ pub fn show_config(config: &crate::config::AppConfig) {
     println!("  Refresh token: {}", masked_str(&config.refresh_token));
     println!("  Client id: {}", config.device_id);
     println!("  Posts limit: {}", config.posts_limit);
-    println!("  Download path: {}", config.download_path.as_deref().unwrap_or("(default - binary folder)"));
+    println!(
+        "  Download path: {}",
+        config
+            .download_path
+            .as_deref()
+            .unwrap_or("(default - binary folder)")
+    );
 }
 
 pub fn tokens_and_client_id_cleared() {
@@ -142,6 +150,10 @@ pub fn comments_for_post_empty_or_not_available(post_title: &str) {
     warning(&format!(
         "Comments for post '{post_title}' empty or not available",
     ));
+}
+
+pub fn comments_toggled(status: &str) {
+    info(&format!("Downloading comments {status}"));
 }
 
 pub fn error_while_loading_config(e: &Error) {
