@@ -12,6 +12,7 @@
     "check": "biome check --write ."
   },
   "dependencies": {
+    "@radix-ui/react-switch": "^1.2.6",
     "@radix-ui/react-tooltip": "^1.2.8",
     "@tauri-apps/api": "2.9.0",
     "@tauri-apps/plugin-dialog": "^2.6.0",
