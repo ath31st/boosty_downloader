@@ -2,6 +2,7 @@ import { Button } from '../components/Button';
 import { Input } from '../components/Input';
 import { Label } from '../components/Label';
 import { ConfigLabel } from '../components/ConfigLabel';
+import { Switch } from '../components/Switch';
 import { useConfig } from '@/hooks/useConfig';
 import { HintIcon } from '@/components/HintIcon';
 import { toast } from 'sonner';
@@ -114,6 +115,29 @@ export default function ConfigPage() {
         {errors.device_id && (
           <p className="text-(--error) text-sm">{errors.device_id}</p>
         )}
+
+        <div className="flex items-center">
+          <HintIcon text="Позволяет загружать комментарии. Загрузка производится в папку с постом." />
+          <div className="flex flex-1 items-center gap-2">
+            <ConfigLabel
+              label="Загрузка комментариев и их контента:"
+              className="w-auto"
+            />
+            <span className="text-(--meta-text)">
+              {config.comments.enabled ? 'Включено' : 'Выключено'}
+            </span>
+          </div>
+          <Switch
+            id="comments-enabled"
+            checked={config.comments.enabled}
+            onCheckedChange={(checked) =>
+              handleChange('comments', {
+                ...config.comments,
+                enabled: checked,
+              })
+            }
+          />
+        </div>
 
         <Label>
           <HintIcon text="Путь для сохранения загружаемого контента. Выберите папку или введите путь вручную." />

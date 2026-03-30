@@ -1,4 +1,5 @@
 export interface CommentsConfig {
+  enabled: boolean;
   reply_limit?: number;
   limit?: number;
   order?: string;
