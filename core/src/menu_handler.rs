@@ -11,7 +11,7 @@ use crate::log_warn;
 use crate::parser::BoostyUrl;
 use crate::post_handler;
 use crate::url_context;
-use anyhow::{Context, Result};
+use anyhow::{Context, Result, anyhow};
 use boosty_api::api_client::ApiClient;
 use boosty_api::traits::HasTitle;
 use boosty_api::traits::IsAvailable;
@@ -165,14 +165,13 @@ pub async fn process_boosty_url(
             let multiple = client
                 .get_posts(blog, cfg.posts_limit, None, offset)
                 .await
-                .with_context(|| format!("Failed to fetch posts for blog '{blog}'"))?;
+                .map_err(|e| anyhow!("Failed to fetch posts for blog '{blog}', {}", e))?;
             post_handler::PostsResult::Multiple(multiple)
         }
         BoostyUrl::Post { blog, post_id } => {
-            let single = client
-                .get_post(blog, post_id)
-                .await
-                .with_context(|| format!("Failed to fetch post '{post_id}' for blog '{blog}'"))?;
+            let single = client.get_post(blog, post_id).await.map_err(|e| {
+                anyhow!("Failed to fetch post '{post_id}' for blog '{blog}', {}", e)
+            })?;
             post_handler::PostsResult::Single(Box::from(single))
         }
     };
