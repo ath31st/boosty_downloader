@@ -45,12 +45,10 @@ build_crate() {
 
             if [ -f "$WEBVIEW_DLL" ]; then
                 echo "Packing $crate_name + WebView2Loader.dll into $ZIP_NAME"
-                (
-                    cd "$OUTPUT_DIR"
-                    zip -j "$ZIP_NAME" \
-                        "${crate_name}-${version}-windows-x86_64.exe" \
-                        "$WEBVIEW_DLL"
-                )
+
+                ABS_DLL_PATH="$(realpath "$WEBVIEW_DLL")"
+                zip -j "$ZIP_NAME" "$OUTPUT_FILE" "$ABS_DLL_PATH"
+                
                 echo "Created archive: $ZIP_NAME"
             else
                 echo "Warning: $WEBVIEW_DLL not found, skipping DLL packaging"
