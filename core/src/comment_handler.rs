@@ -8,7 +8,7 @@ use boosty_api::{
 };
 use chrono::{DateTime, Utc};
 
-use crate::{cli, content_items_handler, file_handler};
+use crate::{DownloadOptions, cli, content_items_handler, download_options, file_handler};
 
 pub struct CommentsResult {
     pub comments: Vec<Comment>,
@@ -17,7 +17,11 @@ pub struct CommentsResult {
     pub created_at: i64,
 }
 
-pub async fn process_comments(results: Vec<CommentsResult>, download_path: &Path) -> Result<()> {
+pub async fn process_comments(
+    results: Vec<CommentsResult>,
+    download_path: &Path,
+    download_options: DownloadOptions,
+) -> Result<()> {
     if results.is_empty() {
         return Ok(());
     }
@@ -36,14 +40,19 @@ pub async fn process_comments(results: Vec<CommentsResult>, download_path: &Path
         let comments_folder_path: PathBuf =
             file_handler::prepare_folder_path_for_comments(&post_folder_path).await?;
 
-        process(&result, &comments_folder_path, post_title)
-            .await
-            .with_context(|| {
-                format!(
-                    "Error processing comments for post '{}'",
-                    result.safe_post_title
-                )
-            })?;
+        process(
+            &result,
+            &comments_folder_path,
+            post_title,
+            download_options.clone(),
+        )
+        .await
+        .with_context(|| {
+            format!(
+                "Error processing comments for post '{}'",
+                result.safe_post_title
+            )
+        })?;
 
         file_handler::normalize_md_file(&comments_folder_path, post_title)
             .await
@@ -56,7 +65,12 @@ pub async fn process_comments(results: Vec<CommentsResult>, download_path: &Path
     Ok(())
 }
 
-async fn process(cr: &CommentsResult, comments_folder_path: &Path, post_title: &str) -> Result<()> {
+async fn process(
+    cr: &CommentsResult,
+    comments_folder_path: &Path,
+    post_title: &str,
+    download_options: DownloadOptions,
+) -> Result<()> {
     if !check_available_comments(&cr.comments, &cr.safe_post_title) {
         return Ok(());
     }
@@ -68,8 +82,15 @@ async fn process(cr: &CommentsResult, comments_folder_path: &Path, post_title: &
         .flat_map(|c| collect_items_from_comment(c, 0))
         .collect();
 
-    content_items_handler::process_content_items(items, post_title, comments_folder_path, None)
-        .await?;
+    let filtered_items = download_options::filter_content_items(items, &download_options);
+
+    content_items_handler::process_content_items(
+        filtered_items,
+        post_title,
+        comments_folder_path,
+        None,
+    )
+    .await?;
 
     Ok(())
 }

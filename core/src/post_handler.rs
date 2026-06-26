@@ -1,4 +1,4 @@
-use crate::{cli, content_items_handler, file_handler};
+use crate::{DownloadOptions, cli, content_items_handler, download_options, file_handler};
 use anyhow::{Context, Result};
 use boosty_api::model::Post;
 use boosty_api::traits::{HasContent, HasTitle, IsAvailable};
@@ -9,17 +9,21 @@ pub enum PostsResult {
     Single(Box<Post>),
 }
 
-pub async fn process_posts(result: PostsResult, download_path: &Path) -> Result<()> {
+pub async fn process_posts(
+    result: PostsResult,
+    download_path: &Path,
+    download_options: DownloadOptions,
+) -> Result<()> {
     match result {
         PostsResult::Multiple(posts) => {
             for post in posts {
-                process(&post, download_path)
+                process(&post, download_path, download_options.clone())
                     .await
                     .with_context(|| format!("Error processing post '{}'", post.safe_title()))?;
             }
         }
         PostsResult::Single(post) => {
-            process(&post, download_path)
+            process(&post, download_path, download_options)
                 .await
                 .with_context(|| format!("Error processing post '{}'", post.safe_title()))?;
         }
@@ -27,7 +31,11 @@ pub async fn process_posts(result: PostsResult, download_path: &Path) -> Result<
     Ok(())
 }
 
-async fn process(post: &Post, download_path: &Path) -> Result<()> {
+async fn process(
+    post: &Post,
+    download_path: &Path,
+    download_options: DownloadOptions,
+) -> Result<()> {
     if !check_available_post(post) {
         return Ok(());
     }
@@ -40,9 +48,10 @@ async fn process(post: &Post, download_path: &Path) -> Result<()> {
             .await?;
 
     let items = post.extract_content();
+    let filtered_items = download_options::filter_content_items(items, &download_options);
 
     content_items_handler::process_content_items(
-        items,
+        filtered_items,
         post_title,
         &post_folder_path,
         Some(&post.signed_query),

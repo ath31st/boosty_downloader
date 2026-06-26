@@ -1,9 +1,9 @@
-use std::path::Path;
-
+use crate::DownloadOptions;
 use crate::cli;
 use crate::comment_handler;
 use crate::config;
 use crate::config::AppConfig;
+use crate::default_download_options;
 use crate::file_handler;
 use crate::log_error;
 use crate::log_info;
@@ -15,6 +15,7 @@ use anyhow::{Context, Result, anyhow};
 use boosty_api::api_client::ApiClient;
 use boosty_api::traits::HasTitle;
 use boosty_api::traits::IsAvailable;
+use std::path::Path;
 
 pub async fn handle_menu(client: &ApiClient) -> Result<bool> {
     cli::show_menu();
@@ -32,7 +33,15 @@ pub async fn handle_menu(client: &ApiClient) -> Result<bool> {
             };
             let ctx = url_context::build_url_context(&input, offset_opt)?;
 
-            if let Err(e) = process_boosty_url(client, &cfg, &ctx.url, ctx.offset).await {
+            if let Err(e) = process_boosty_url(
+                client,
+                &cfg,
+                &ctx.url,
+                ctx.offset,
+                default_download_options(),
+            )
+            .await
+            {
                 log_error!("{:#}", e);
             };
         }
@@ -151,6 +160,7 @@ pub async fn process_boosty_url(
     cfg: &AppConfig,
     url: &BoostyUrl,
     offset_url: Option<BoostyUrl>,
+    download_options: DownloadOptions,
 ) -> Result<()> {
     let offset: Option<String> = match offset_url {
         Some(BoostyUrl::Post { blog, post_id }) => {
@@ -241,7 +251,7 @@ pub async fn process_boosty_url(
 
     let download_path = &config::get_download_path(cfg);
 
-    post_handler::process_posts(result, download_path)
+    post_handler::process_posts(result, download_path, download_options.clone())
         .await
         .with_context(|| {
             format!(
@@ -253,7 +263,7 @@ pub async fn process_boosty_url(
             )
         })?;
 
-    comment_handler::process_comments(comments_results, download_path)
+    comment_handler::process_comments(comments_results, download_path, download_options)
         .await
         .with_context(|| {
             format!(
@@ -283,7 +293,15 @@ async fn process_batch_file(
 
         match url_context::build_url_context(&link, None) {
             Ok(ctx) => {
-                if let Err(e) = process_boosty_url(client, cfg, &ctx.url, ctx.offset).await {
+                if let Err(e) = process_boosty_url(
+                    client,
+                    cfg,
+                    &ctx.url,
+                    ctx.offset,
+                    default_download_options(),
+                )
+                .await
+                {
                     log_error!("Error processing link '{}': {e}", link);
                 }
             }
