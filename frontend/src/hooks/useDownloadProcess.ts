@@ -25,13 +25,13 @@ export function useDownloadProcess(setDownloading: (v: boolean) => void) {
   const [startTime, setStartTime] = useState<number | null>(null);
   const { urlError, validateUrl } = useUrlValidation();
   const logsEndRef = useRef<HTMLDivElement>(null);
-  const [downloadOptions, setDownloadOptions] = useState<DownloadOptions>({
-    video: true,
-    audio: true,
-    images: true,
-    texts: true,
-    files: true,
-  });
+  const [downloadOptions, setDownloadOptions] = useState<DownloadOptions>([
+    'Video',
+    'Audio',
+    'Images',
+    'Texts',
+    'Files',
+  ]);
 
   useEffect(() => {
     if (url) sessionStorage.setItem('url', url);
@@ -76,6 +76,7 @@ export function useDownloadProcess(setDownloading: (v: boolean) => void) {
       await invoke('download_content', {
         url: url.trim(),
         offsetUrl: offsetUrl.trim() !== '' ? offsetUrl : undefined,
+        downloadOptions,
       });
       toast.success('Загрузка завершена');
     } catch (e) {

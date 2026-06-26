@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use boosty_downloader_core::{AppConfig, log_error, log_info};
+use boosty_downloader_core::{AppConfig, DownloadOptions, log_error, log_info};
 use tauri::State;
 use tokio::sync::Mutex;
 
@@ -58,6 +58,7 @@ pub async fn init_client(state: State<'_, Arc<Mutex<AppState>>>) -> Result<(), S
 pub async fn download_content(
     url: String,
     offset_url: Option<String>,
+    download_options: DownloadOptions,
     state: State<'_, Arc<Mutex<AppState>>>,
 ) -> Result<(), String> {
     let state = state.lock().await;
@@ -71,7 +72,7 @@ pub async fn download_content(
             e.to_string()
         })?;
 
-    boosty_downloader_core::process_boosty_url(client, cfg, &ctx.url, ctx.offset)
+    boosty_downloader_core::process_boosty_url(client, cfg, &ctx.url, ctx.offset, download_options)
         .await
         .map_err(|e| {
             log_error!("{e}");

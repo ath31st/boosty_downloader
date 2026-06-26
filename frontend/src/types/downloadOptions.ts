@@ -1,7 +1,3 @@
-export interface DownloadOptions {
-  video: boolean;
-  audio: boolean;
-  images: boolean;
-  texts: boolean;
-  files: boolean;
-}
+export type DownloadOption = 'Video' | 'Audio' | 'Images' | 'Texts' | 'Files';
+
+export type DownloadOptions = DownloadOption[];
