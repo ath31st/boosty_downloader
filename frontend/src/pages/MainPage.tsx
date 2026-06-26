@@ -6,6 +6,7 @@ import { DownloadIcon } from 'lucide-react';
 import { Input } from '@/components/Input';
 import { useDownloadProcess } from '@/hooks/useDownloadProcess';
 import { HintIcon } from '@/components/HintIcon';
+import { DownloadOptionsPanel } from '@/components/DownloadOptionsPanel';
 
 interface MainPageProps {
   isDownloading: boolean;
@@ -28,11 +29,19 @@ export default function MainPage({
     logsEndRef,
     isOffsetUrlDisabled,
     isDifferentBlogs,
+    downloadOptions,
+    setDownloadOptions,
   } = useDownloadProcess(setDownloading);
 
   return (
     <div className="flex flex-col gap-4 rounded-lg border border-(--border) bg-(--background) p-4 text-(--text)">
       <div className="flex flex-1 flex-col gap-2">
+        <DownloadOptionsPanel
+          value={downloadOptions}
+          onChange={setDownloadOptions}
+          disabled={isDownloading}
+        />
+
         <div className="flex flex-1 flex-row gap-4">
           <Input
             placeholder="URL адрес блога или конкретного поста"
@@ -76,7 +85,7 @@ export default function MainPage({
         </div>
       </div>
 
-      <div className="h-80 overflow-y-auto rounded-lg border border-(--border) bg-(--secondary-bg) p-2">
+      <div className="h-65 overflow-y-auto rounded-lg border border-(--border) bg-(--secondary-bg) p-2">
         {logs.map((msg) => (
           <p
             key={msg.message}

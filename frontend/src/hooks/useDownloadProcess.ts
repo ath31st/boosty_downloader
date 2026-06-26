@@ -7,6 +7,7 @@ import type { ProgressMessage } from '@/types/progressMessage';
 import { useUrlValidation } from '@/hooks/useUrlValidation';
 import { isBlogUrl } from '@/utils/isBlogUrl';
 import { isSameBlogUrl } from '@/utils/isSameBlogUrl';
+import type { DownloadOptions } from '@/types/downloadOptions';
 
 export function useDownloadProcess(setDownloading: (v: boolean) => void) {
   const [url, setUrl] = useState(() => {
@@ -24,6 +25,13 @@ export function useDownloadProcess(setDownloading: (v: boolean) => void) {
   const [startTime, setStartTime] = useState<number | null>(null);
   const { urlError, validateUrl } = useUrlValidation();
   const logsEndRef = useRef<HTMLDivElement>(null);
+  const [downloadOptions, setDownloadOptions] = useState<DownloadOptions>({
+    video: true,
+    audio: true,
+    images: true,
+    texts: true,
+    files: true,
+  });
 
   useEffect(() => {
     if (url) sessionStorage.setItem('url', url);
@@ -106,5 +114,7 @@ export function useDownloadProcess(setDownloading: (v: boolean) => void) {
     logsEndRef,
     isOffsetUrlDisabled,
     isDifferentBlogs,
+    downloadOptions,
+    setDownloadOptions,
   };
 }
