@@ -117,7 +117,7 @@ export default function ConfigPage() {
         )}
 
         <div className="flex items-center">
-          <HintIcon text="Позволяет загружать комментарии. Загрузка производится в папку с постом." />
+          <HintIcon text="Позволяет загружать комментарии. Загрузка производится в папку с постом. Фильтры контента для постов применяются и к содержимому комментариев" />
           <div className="flex flex-1 items-center gap-2">
             <ConfigLabel
               label="Загрузка комментариев и их контента:"

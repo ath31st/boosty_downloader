@@ -22,10 +22,19 @@ const OPTIONS: {
   label: string;
   icon: LucideIcon;
 }[] = [
-  { key: 'Video', label: 'Видео контент', icon: Video },
+  {
+    key: 'Video',
+    label:
+      'Видео контент (включая ссылки на видео с других площадок, например, YouTube)',
+    icon: Video,
+  },
   { key: 'Audio', label: 'Аудио контент', icon: Music },
   { key: 'Images', label: 'Изображения', icon: Image },
-  { key: 'Texts', label: 'Текстовый контент', icon: FileText },
+  {
+    key: 'Texts',
+    label: 'Текст поста (включая ссылки и эмодзи)',
+    icon: FileText,
+  },
   { key: 'Files', label: 'Файлы', icon: File },
 ];
 
@@ -41,7 +50,7 @@ export function DownloadOptionsPanel({
   };
 
   return (
-    <div className="flex items-center justify-around gap-5 rounded-lg border border-(--border) bg-(--secondary-bg) px-3 py-2">
+    <div className="flex items-center justify-around rounded-lg py-2">
       {OPTIONS.map(({ key, label, icon: Icon }) => {
         const checked = value.includes(key);
 

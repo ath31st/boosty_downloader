@@ -52,7 +52,12 @@ export default function MainPage({
           />
           <Button
             onClick={startDownload}
-            disabled={isDownloading || !url || isDifferentBlogs}
+            disabled={
+              isDownloading ||
+              !url ||
+              isDifferentBlogs ||
+              downloadOptions.length === 0
+            }
           >
             <DownloadIcon />
           </Button>
