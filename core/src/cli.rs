@@ -1,7 +1,11 @@
-use crate::{file_handler::DownloadResult, log_error, log_info};
+use crate::{DownloadOption, DownloadOptions, file_handler::DownloadResult, log_error, log_info};
 use anyhow::Error;
-use dialoguer::{Input, Select, theme::ColorfulTheme};
-use std::{collections::HashMap, path::Path};
+use dialoguer::{Input, MultiSelect, Select, theme::ColorfulTheme};
+use std::{
+    collections::{HashMap, HashSet},
+    path::Path,
+    sync::Arc,
+};
 
 pub const ENTER_URL: &str = "Enter URL:";
 pub const ENTER_URLS_FILE: &str = "Enter path to file with URLs:";
@@ -188,6 +192,40 @@ pub fn read_refresh_and_client_id() -> Option<(String, String)> {
     }
 
     Some((refresh_token, client_id))
+}
+
+pub fn read_download_options() -> Option<DownloadOptions> {
+    let options = [
+        (DownloadOption::Video, "Video (Vide content)"),
+        (DownloadOption::Audio, "Audio (Audio content)"),
+        (DownloadOption::Images, "Images"),
+        (
+            DownloadOption::Texts,
+            "Texts (post content, links & emojis)",
+        ),
+        (DownloadOption::Files, "Files"),
+    ];
+
+    let defaults = vec![true; options.len()];
+
+    let items: Vec<&str> = options.iter().map(|(_, text)| *text).collect();
+
+    let selection = MultiSelect::with_theme(&dialoguer::theme::SimpleTheme)
+        .with_prompt("Select content types to download (Space to toggle, Enter to confirm)")
+        .items(&items)
+        .defaults(&defaults)
+        .interact_opt();
+
+    match selection {
+        Ok(Some(indices)) => {
+            let mut selected_set = HashSet::new();
+            for idx in indices {
+                selected_set.insert(options[idx].0.clone());
+            }
+            Some(Arc::new(selected_set))
+        }
+        _ => None,
+    }
 }
 
 pub fn exit_message() {

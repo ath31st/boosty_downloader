@@ -3,7 +3,6 @@ use crate::cli;
 use crate::comment_handler;
 use crate::config;
 use crate::config::AppConfig;
-use crate::default_download_options;
 use crate::file_handler;
 use crate::log_error;
 use crate::log_info;
@@ -24,7 +23,9 @@ pub async fn handle_menu(client: &ApiClient) -> Result<bool> {
         0 => {
             let cfg = config::load_config().await?;
 
-            if let Some((input, offset_input)) = cli::read_download_url_and_offset() {
+            if let Some((input, offset_input)) = cli::read_download_url_and_offset()
+                && let Some(download_options) = cli::read_download_options()
+            {
                 let offset_opt = if offset_input.is_empty() {
                     None
                 } else {
@@ -33,14 +34,8 @@ pub async fn handle_menu(client: &ApiClient) -> Result<bool> {
 
                 let ctx = url_context::build_url_context(&input, offset_opt)?;
 
-                if let Err(e) = process_boosty_url(
-                    client,
-                    &cfg,
-                    &ctx.url,
-                    ctx.offset,
-                    default_download_options(),
-                )
-                .await
+                if let Err(e) =
+                    process_boosty_url(client, &cfg, &ctx.url, ctx.offset, download_options).await
                 {
                     log_error!("{:#}", e);
                 };
@@ -50,7 +45,9 @@ pub async fn handle_menu(client: &ApiClient) -> Result<bool> {
             let cfg = config::load_config().await?;
 
             if let Some(file_path_str) = cli::read_batch_file_path()
-                && let Err(e) = process_batch_file(client, &cfg, &file_path_str).await
+                && let Some(download_options) = cli::read_download_options()
+                && let Err(e) =
+                    process_batch_file(client, &cfg, &file_path_str, download_options).await
             {
                 log_error!("Batch process failed: {:#}", e);
             }
@@ -266,6 +263,7 @@ async fn process_batch_file(
     client: &ApiClient,
     cfg: &AppConfig,
     file_path_str: &str,
+    download_options: DownloadOptions,
 ) -> Result<()> {
     let file_path = Path::new(file_path_str);
     let links = file_handler::read_links_from_file(file_path).await?;
@@ -277,14 +275,9 @@ async fn process_batch_file(
 
         match url_context::build_url_context(&link, None) {
             Ok(ctx) => {
-                if let Err(e) = process_boosty_url(
-                    client,
-                    cfg,
-                    &ctx.url,
-                    ctx.offset,
-                    default_download_options(),
-                )
-                .await
+                if let Err(e) =
+                    process_boosty_url(client, cfg, &ctx.url, ctx.offset, download_options.clone())
+                        .await
                 {
                     log_error!("Error processing link '{}': {e}", link);
                 }

@@ -19,7 +19,9 @@ pub use config::{
     AppConfig, CommentsConfig, get_download_path, load_config, save_config, sync_auth,
 };
 pub use console_logger::ConsoleLogger;
-pub use download_options::{DownloadOptions, default_download_options, filter_content_items};
+pub use download_options::{
+    DownloadOption, DownloadOptions, default_download_options, filter_content_items,
+};
 pub use logger::{LogLevel, LogMessage, Logger, ProgressMessage, get_logger, set_logger};
 pub use menu_handler::{handle_menu, process_boosty_url};
 pub use url_context::build_url_context;
