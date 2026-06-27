@@ -18,67 +18,70 @@ use boosty_api::traits::IsAvailable;
 use std::path::Path;
 
 pub async fn handle_menu(client: &ApiClient) -> Result<bool> {
-    cli::show_menu();
     let selected_menu = cli::read_input_menu();
 
     match selected_menu {
+        0 => {
+            let cfg = config::load_config().await?;
+
+            if let Some((input, offset_input)) = cli::read_download_url_and_offset() {
+                let offset_opt = if offset_input.is_empty() {
+                    None
+                } else {
+                    Some(offset_input.as_str())
+                };
+
+                let ctx = url_context::build_url_context(&input, offset_opt)?;
+
+                if let Err(e) = process_boosty_url(
+                    client,
+                    &cfg,
+                    &ctx.url,
+                    ctx.offset,
+                    default_download_options(),
+                )
+                .await
+                {
+                    log_error!("{:#}", e);
+                };
+            }
+        }
         1 => {
             let cfg = config::load_config().await?;
-            let input = cli::read_user_input(cli::ENTER_URL);
-            let offset_input = cli::read_user_input(cli::ENTER_OFFSET_PATH);
-            let offset_opt = if offset_input.trim().is_empty() {
-                None
-            } else {
-                Some(offset_input.as_str())
-            };
-            let ctx = url_context::build_url_context(&input, offset_opt)?;
 
-            if let Err(e) = process_boosty_url(
-                client,
-                &cfg,
-                &ctx.url,
-                ctx.offset,
-                default_download_options(),
-            )
-            .await
+            if let Some(file_path_str) = cli::read_batch_file_path()
+                && let Err(e) = process_batch_file(client, &cfg, &file_path_str).await
             {
-                log_error!("{:#}", e);
-            };
-        }
-        2 => {
-            let cfg = config::load_config().await?;
-            let file_path_str = cli::read_user_input(cli::ENTER_URLS_FILE);
-
-            if let Err(e) = process_batch_file(client, &cfg, &file_path_str).await {
                 log_error!("Batch process failed: {:#}", e);
             }
         }
+        2 => {
+            if let Some(entered_token) = cli::read_access_token() {
+                client.set_bearer_token(&entered_token).await?;
+                config::update_config(|cfg| {
+                    cfg.access_token = entered_token;
+                    cfg.refresh_token = String::new();
+                    cfg.device_id = String::new();
+                })
+                .await
+                .with_context(|| "Failed to update config")?;
+            }
+        }
         3 => {
-            let entered_token = cli::read_user_input(cli::ENTER_ACCESS_TOKEN);
-            client.set_bearer_token(&entered_token).await?;
-            config::update_config(|cfg| {
-                cfg.access_token = entered_token;
-                cfg.refresh_token = String::new();
-                cfg.device_id = String::new();
-            })
-            .await
-            .with_context(|| "Failed to update config")?;
+            if let Some((entered_token, entered_device_id)) = cli::read_refresh_and_client_id() {
+                client
+                    .set_refresh_token_and_device_id(&entered_token, &entered_device_id)
+                    .await?;
+                config::update_config(|cfg| {
+                    cfg.access_token = String::new();
+                    cfg.refresh_token = entered_token;
+                    cfg.device_id = entered_device_id;
+                })
+                .await
+                .with_context(|| "Failed to update config")?;
+            }
         }
         4 => {
-            let entered_token = cli::read_user_input(cli::ENTER_REFRESH_TOKEN);
-            let entered_device_id = cli::read_user_input(cli::ENTER_CLIENT_ID);
-            client
-                .set_refresh_token_and_device_id(&entered_token, &entered_device_id)
-                .await?;
-            config::update_config(|cfg| {
-                cfg.access_token = String::new();
-                cfg.refresh_token = entered_token;
-                cfg.device_id = entered_device_id;
-            })
-            .await
-            .with_context(|| "Failed to update config")?;
-        }
-        5 => {
             client.clear_refresh_and_device_id().await;
             config::update_config(|cfg| {
                 cfg.access_token = String::new();
@@ -89,68 +92,49 @@ pub async fn handle_menu(client: &ApiClient) -> Result<bool> {
             .with_context(|| "Failed to clear tokens")?;
             cli::tokens_and_client_id_cleared();
         }
+        5 => {
+            let cfg = config::load_config().await?;
+
+            if let Some(limit) = cli::read_posts_limit(cfg.posts_limit) {
+                config::update_config(|cfg| cfg.posts_limit = limit)
+                    .await
+                    .with_context(|| "Failed to update posts limit")?;
+            }
+        }
         6 => {
             let cfg = config::load_config().await?;
-            let prompt = format!("{} (current: {}):", cli::ENTER_POSTS_LIMIT, cfg.posts_limit);
-            let entered_posts_limit = cli::read_user_input(&prompt);
-            match entered_posts_limit
-                .trim()
-                .parse::<usize>()
-                .map_err(anyhow::Error::from)
-            {
-                Ok(limit) => {
-                    config::update_config(|cfg| cfg.posts_limit = limit)
-                        .await
-                        .with_context(|| "Failed to update posts limit")?;
-                }
-                Err(e) => {
-                    log_error!("{:#}", e);
-                }
+
+            if let Some(new_path_opt) = cli::read_download_path(cfg.download_path.as_deref()) {
+                config::update_config(|cfg| cfg.download_path = new_path_opt)
+                    .await
+                    .with_context(|| "Failed to update download path")?;
             }
         }
         7 => {
             let cfg = config::load_config().await?;
-            let current_path = cfg
-                .download_path
-                .as_deref()
-                .unwrap_or("(default - binary folder)");
-            let prompt = format!("{} (current: {})", cli::ENTER_DOWNLOAD_PATH, current_path);
-            let entered_path = cli::read_user_input(&prompt);
 
-            let new_path = if entered_path.trim().is_empty() {
-                None
-            } else {
-                let path = std::path::Path::new(&entered_path);
-                if !path.exists() {
-                    log_info!("Path does not exist, will try to create on download");
-                }
-                Some(entered_path)
-            };
-
-            config::update_config(|cfg| cfg.download_path = new_path)
+            if let Some(enable_comments) = cli::read_comments_status(cfg.comments.enabled) {
+                config::update_config(|cfg| {
+                    cfg.comments.enabled = enable_comments;
+                })
                 .await
-                .with_context(|| "Failed to update download path")?;
+                .with_context(|| "Failed to update comments status")?;
+
+                let status = if enable_comments {
+                    "enabled"
+                } else {
+                    "disabled"
+                };
+                cli::comments_toggled(status);
+            }
         }
-        8 => {
-            config::update_config(|cfg| {
-                cfg.comments.enabled = !cfg.comments.enabled;
-            })
-            .await
-            .with_context(|| "Failed to toggle comments")?;
-            let status = if config::load_config().await.unwrap().comments.enabled {
-                "enabled"
-            } else {
-                "disabled"
-            };
-            cli::comments_toggled(status);
-        }
-        9 => cli::show_api_client_headers(&client.headers_as_map()),
-        10 => cli::show_config(&config::load_config().await?),
-        11 => {
+        8 => cli::show_api_client_headers(&client.headers_as_map()),
+        9 => cli::show_config(&config::load_config().await?),
+        10 => {
             cli::exit_message();
             return Ok(false);
         }
-        _ => cli::show_menu(),
+        _ => {}
     }
     Ok(true)
 }

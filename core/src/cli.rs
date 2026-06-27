@@ -1,6 +1,7 @@
 use crate::{file_handler::DownloadResult, log_error, log_info};
 use anyhow::Error;
-use std::collections::HashMap;
+use dialoguer::{Input, Select, theme::ColorfulTheme};
+use std::{collections::HashMap, path::Path};
 
 pub const ENTER_URL: &str = "Enter URL:";
 pub const ENTER_URLS_FILE: &str = "Enter path to file with URLs:";
@@ -12,20 +13,6 @@ pub const ENTER_CLIENT_ID: &str = "Enter client id:";
 pub const ENTER_POSTS_LIMIT: &str = "Enter posts limit:";
 pub const ENTER_DOWNLOAD_PATH: &str =
     "Enter download path (or press enter to use default - binary folder):";
-
-pub fn show_menu() {
-    println!("1. Download content from URL (blog or post)");
-    println!("2. Download content from a list of URLs (file)");
-    println!("3. Enter access token");
-    println!("4. Enter refresh token and client id (NOT ACTIVE IN THIS VERSION)");
-    println!("5. Clear tokens and client id");
-    println!("6. Change posts limit");
-    println!("7. Change download path");
-    println!("8. Toggle comments download");
-    println!("9. Show API client headers");
-    println!("10. Show config");
-    println!("11. Exit");
-}
 
 pub fn info(msg: &str) {
     println!("\x1b[34mInfo:\x1b[0m {msg}");
@@ -40,34 +27,167 @@ pub fn warning(msg: &str) {
 }
 
 pub fn read_input_menu() -> i8 {
-    loop {
-        println!("Select menu:");
-        let mut input = String::new();
+    let items = vec![
+        "Download content from URL (blog or post)",
+        "Download content from a list of URLs (file)",
+        "Enter access token",
+        "Enter refresh token and client id (NOT ACTIVE)",
+        "Clear tokens and client id",
+        "Change posts limit",
+        "Change download path",
+        "Toggle comments download",
+        "Show API client headers",
+        "Show config",
+        "Exit",
+    ];
 
-        if let Err(e) = std::io::stdin().read_line(&mut input) {
-            error(&format!("Reading input: {e}"));
-            continue;
-        }
+    let selection = Select::with_theme(&ColorfulTheme::default())
+        .with_prompt("Select an option")
+        .items(&items)
+        .default(0)
+        .interact_opt();
 
-        match input.trim().parse::<i8>() {
-            Ok(num) if (1..=11).contains(&num) => return num,
-            _ => error("Please enter a valid number between 1 and 11"),
-        }
+    match selection {
+        Ok(Some(index)) => (index) as i8,
+        _ => 10,
     }
 }
 
-pub fn read_user_input(prompt: &str) -> String {
-    loop {
-        println!("{prompt}");
-        let mut input = String::new();
+pub fn read_download_url_and_offset() -> Option<(String, String)> {
+    let url: String = Input::<String>::with_theme(&ColorfulTheme::default())
+        .with_prompt(ENTER_URL)
+        .interact_text()
+        .ok()?;
 
-        if let Err(e) = std::io::stdin().read_line(&mut input) {
-            error(&format!("Reading input: {e}"));
-            continue;
-        }
-
-        return input.trim().to_string();
+    if url.trim().is_empty() {
+        return None;
     }
+
+    let offset: String = Input::<String>::with_theme(&ColorfulTheme::default())
+        .with_prompt(ENTER_OFFSET_PATH)
+        .allow_empty(true)
+        .interact_text()
+        .ok()?;
+
+    Some((url.trim().to_string(), offset.trim().to_string()))
+}
+
+pub fn read_batch_file_path() -> Option<String> {
+    let result: Result<String, _> = Input::<String>::with_theme(&ColorfulTheme::default())
+        .with_prompt(ENTER_URLS_FILE)
+        .interact_text();
+
+    match result {
+        Ok(path) => {
+            let trimmed = path.trim().to_string();
+            if trimmed.is_empty() {
+                None
+            } else {
+                Some(trimmed)
+            }
+        }
+        Err(_) => None,
+    }
+}
+
+pub fn read_comments_status(current_enabled: bool) -> Option<bool> {
+    let options = vec!["Enabled", "Disabled"];
+
+    let default_index = if current_enabled { 0 } else { 1 };
+
+    let selection = Select::with_theme(&ColorfulTheme::default())
+        .with_prompt("Set comments download status")
+        .items(&options)
+        .default(default_index)
+        .interact_opt();
+
+    match selection {
+        Ok(Some(index)) => Some(index == 0),
+        _ => None,
+    }
+}
+
+pub fn read_posts_limit(current_limit: usize) -> Option<usize> {
+    let prompt = format!("{} (current: {})", ENTER_POSTS_LIMIT, current_limit);
+
+    let result: Result<usize, _> = Input::with_theme(&ColorfulTheme::default())
+        .with_prompt(&prompt)
+        .default(current_limit)
+        .interact_text();
+
+    result.ok()
+}
+
+pub fn read_download_path(current_path: Option<&str>) -> Option<Option<String>> {
+    let default_display = current_path.unwrap_or("(default - binary folder)");
+    let prompt = format!("{} (current: {})", ENTER_DOWNLOAD_PATH, default_display);
+
+    let result: Result<String, _> = Input::with_theme(&ColorfulTheme::default())
+        .with_prompt(&prompt)
+        .allow_empty(true)
+        .interact_text();
+
+    match result {
+        Ok(entered_path) => {
+            let trimmed = entered_path.trim();
+
+            if trimmed.is_empty() {
+                return Some(None);
+            }
+
+            let path = Path::new(trimmed);
+            if !path.exists() {
+                info("Path does not exist, will try to create on download");
+            }
+
+            Some(Some(trimmed.to_string()))
+        }
+        Err(_) => None,
+    }
+}
+
+pub fn read_access_token() -> Option<String> {
+    let result: Result<String, _> = Input::<String>::with_theme(&ColorfulTheme::default())
+        .with_prompt(ENTER_ACCESS_TOKEN)
+        .interact();
+
+    match result {
+        Ok(token) => {
+            let trimmed = token.trim().to_string();
+            if trimmed.is_empty() {
+                None
+            } else {
+                Some(trimmed)
+            }
+        }
+        Err(_) => None,
+    }
+}
+
+pub fn read_refresh_and_client_id() -> Option<(String, String)> {
+    let refresh_token: String = Input::<String>::with_theme(&ColorfulTheme::default())
+        .with_prompt(ENTER_REFRESH_TOKEN)
+        .interact()
+        .ok()?
+        .trim()
+        .to_string();
+
+    if refresh_token.is_empty() {
+        return None;
+    }
+
+    let client_id: String = Input::<String>::with_theme(&ColorfulTheme::default())
+        .with_prompt(ENTER_CLIENT_ID)
+        .interact_text()
+        .ok()?
+        .trim()
+        .to_string();
+
+    if client_id.is_empty() {
+        return None;
+    }
+
+    Some((refresh_token, client_id))
 }
 
 pub fn exit_message() {
