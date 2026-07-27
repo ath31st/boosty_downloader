@@ -47,7 +47,8 @@ pub async fn make_client() -> Result<ApiClient> {
 
 pub async fn init_client(client: &ApiClient) -> Result<()> {
     checks::check_api(client).await?;
-    let cfg = config::load_config().await?;
-    config::sync_auth(client, &cfg).await?;
+    let mut cfg = config::load_config().await?;
+    config::sync_auth(client, &mut cfg).await?;
+    config::save_config(&cfg).await?;
     Ok(())
 }

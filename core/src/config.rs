@@ -123,20 +123,25 @@ where
     Ok(cfg)
 }
 
-pub async fn sync_auth(client: &ApiClient, cfg: &AppConfig) -> Result<()> {
-    if !cfg.access_token.is_empty() {
-        client.set_bearer_token(&cfg.access_token).await?;
-        cli::access_token_set(&cfg.access_token);
-    } else {
-        client.clear_access_token().await;
-    }
-
+pub async fn sync_auth(client: &ApiClient, cfg: &mut AppConfig) -> Result<()> {
     if !cfg.refresh_token.is_empty() && !cfg.device_id.is_empty() {
         client
             .set_refresh_token_and_device_id(&cfg.refresh_token, &cfg.device_id)
             .await?;
+        let pair = client.refresh_tokens().await?;
+
+        cfg.access_token = pair.access_token;
+        cfg.refresh_token = pair.refresh_token;
+
+        cli::access_token_set(&cfg.access_token);
         cli::refresh_token_set(&cfg.refresh_token);
         cli::client_id_set(&cfg.device_id);
+    } else if !cfg.access_token.is_empty() {
+        client.set_bearer_token(&cfg.access_token).await?;
+        cli::access_token_set(&cfg.access_token);
+    } else {
+        client.clear_access_token().await;
+        client.clear_refresh_and_device_id().await;
     }
 
     Ok(())

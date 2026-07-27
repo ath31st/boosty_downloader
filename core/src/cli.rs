@@ -35,7 +35,7 @@ pub fn read_input_menu() -> i8 {
         "Download content from URL (blog or post)",
         "Download content from a list of URLs (file)",
         "Enter access token",
-        "Enter refresh token and client id (NOT ACTIVE)",
+        "Enter refresh token and client id",
         "Clear tokens and client id",
         "Change posts limit",
         "Change download path",

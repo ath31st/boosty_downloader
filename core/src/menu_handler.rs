@@ -69,9 +69,13 @@ pub async fn handle_menu(client: &ApiClient) -> Result<bool> {
                 client
                     .set_refresh_token_and_device_id(&entered_token, &entered_device_id)
                     .await?;
+                let pair = client.refresh_tokens().await?;
+                cli::access_token_set(&pair.access_token);
+                cli::refresh_token_set(&pair.refresh_token);
+                cli::client_id_set(&entered_device_id);
                 config::update_config(|cfg| {
-                    cfg.access_token = String::new();
-                    cfg.refresh_token = entered_token;
+                    cfg.access_token = pair.access_token;
+                    cfg.refresh_token = pair.refresh_token;
                     cfg.device_id = entered_device_id;
                 })
                 .await
