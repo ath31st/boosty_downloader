@@ -85,11 +85,9 @@ export default function ConfigPage() {
         )}
 
         <Label>
-          <HintIcon text="В текущей версии этот функционал временно отключен" />
-          {/* <HintIcon text="Токен для обновления токена доступа. Во время обновления токена доступа, обновляется и токен обновления" /> */}
+          <HintIcon text="Токен для обновления access token. При обновлении также приходит новый refresh token — его стоит сохранить" />
           <ConfigLabel label="Refresh token:" />
           <Input
-            disabled
             type="text"
             value={config.refresh_token}
             onChange={(e) => handleChange('refresh_token', e)}
@@ -101,11 +99,9 @@ export default function ConfigPage() {
         )}
 
         <Label>
-          <HintIcon text="В текущей версии этот функционал временно отключен" />
-          {/* <HintIcon text="Идентификатор клиента (вашего браузера). Обязательный компонент для использования токена обновления" /> */}
+          <HintIcon text="Идентификатор клиента (вашего браузера). Обязателен вместе с refresh token" />
           <ConfigLabel label="Device ID:" />
           <Input
-            disabled
             type="text"
             value={config.device_id}
             onChange={(e) => handleChange('device_id', e)}

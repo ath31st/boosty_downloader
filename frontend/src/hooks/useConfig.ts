@@ -67,11 +67,13 @@ export function useConfig() {
       };
 
       await invoke('update_config', { newConfig: finalConfig });
-      setDownloadPath(finalConfig.download_path);
+      const updated = await invoke<AppConfig>('get_config');
+      setConfig(updated);
+      setDownloadPath(updated.download_path);
       console.log('Config updated');
-      toast.success('Настройки сохранены');
+      toast.success('Настройки сохранены');
     } catch (err) {
-      toast.error('Не удалось сохранить настройки');
+      toast.error('Не удалось сохранить настройки');
       console.error('Failed to update config:', err);
     } finally {
       setSaving(false);

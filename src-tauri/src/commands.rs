@@ -20,18 +20,20 @@ pub async fn update_config(
     let mut state = state.lock().await;
     state.config = new_config;
 
+    let client = state
+        .client
+        .as_ref()
+        .ok_or("Client not initialized")?
+        .clone();
+
+    boosty_downloader_core::sync_auth(&client, &mut state.config)
+        .await
+        .map_err(|e| e.to_string())?;
+
     boosty_downloader_core::save_config(&state.config)
         .await
         .map_err(|e| e.to_string())?;
 
-    boosty_downloader_core::sync_auth(
-        state.client.as_ref().ok_or("Client not initialized")?,
-        &state.config,
-    )
-    .await
-    .map_err(|e| e.to_string())?;
-    dbg!(&state.client);
-    dbg!(&state.config);
     Ok(())
 }
 
