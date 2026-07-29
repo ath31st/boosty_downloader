@@ -25,6 +25,15 @@ export function useConfigValidation() {
     checkToken('refresh_token', 'Refresh token');
     checkToken('device_id', 'Device ID');
 
+    const refresh = config.refresh_token.trim();
+    const deviceId = config.device_id.trim();
+    if (refresh && !deviceId) {
+      newErrors.device_id = 'Device ID обязателен вместе с refresh token';
+    }
+    if (deviceId && !refresh) {
+      newErrors.refresh_token = 'Refresh token обязателен вместе с Device ID';
+    }
+
     if (config.download_path?.trim()) {
       if (config.download_path.trim().length > 500) {
         newErrors.download_path = 'Путь слишком длинный';

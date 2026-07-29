@@ -31,6 +31,7 @@ export default function MainPage({
     isDifferentBlogs,
     downloadOptions,
     setDownloadOptions,
+    urlError,
   } = useDownloadProcess(setDownloading);
 
   return (
@@ -62,6 +63,7 @@ export default function MainPage({
             <DownloadIcon />
           </Button>
         </div>
+        {urlError && <p className="text-(--error) text-sm">{urlError}</p>}
         <div className="relative flex flex-1 flex-row gap-4">
           <Input
             placeholder="URL адрес поста для отступа"
@@ -91,10 +93,9 @@ export default function MainPage({
       </div>
 
       <div className="h-65 overflow-y-auto rounded-lg border border-(--border) bg-(--secondary-bg) p-2">
-        {logs.map((msg) => (
+        {logs.map((msg, index) => (
           <p
-            key={msg.message}
-            ref={logsEndRef}
+            key={`${index}-${msg.level}-${msg.message}`}
             className="text-(--meta-text) text-sm"
           >
             {formatLog(msg)}

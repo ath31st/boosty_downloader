@@ -35,10 +35,12 @@ export function useDownloadProcess(setDownloading: (v: boolean) => void) {
 
   useEffect(() => {
     if (url) sessionStorage.setItem('url', url);
+    else sessionStorage.removeItem('url');
   }, [url]);
 
   useEffect(() => {
     if (offsetUrl) sessionStorage.setItem('offsetUrl', offsetUrl);
+    else sessionStorage.removeItem('offsetUrl');
   }, [offsetUrl]);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: crying linter with red text

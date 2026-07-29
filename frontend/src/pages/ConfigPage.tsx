@@ -14,6 +14,7 @@ export default function ConfigPage() {
     config,
     handleChange,
     handleSave,
+    handleClearAuth,
     isLoading,
     isSaving,
     downloadPath,
@@ -162,13 +163,22 @@ export default function ConfigPage() {
         </Label>
       </div>
 
-      <Button
-        className="w-50"
-        onClick={handleSaveWithValidation}
-        disabled={isSaving}
-      >
-        {isSaving ? 'Сохраняем...' : 'Сохранить'}
-      </Button>
+      <div className="flex gap-3">
+        <Button
+          className="w-50"
+          onClick={handleSaveWithValidation}
+          disabled={isSaving}
+        >
+          {isSaving ? 'Сохраняем...' : 'Сохранить'}
+        </Button>
+        <Button
+          className="w-50"
+          onClick={handleClearAuth}
+          disabled={isSaving}
+        >
+          Очистить токены
+        </Button>
+      </div>
     </div>
   );
 }
