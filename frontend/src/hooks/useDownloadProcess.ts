@@ -83,9 +83,22 @@ export function useDownloadProcess(setDownloading: (v: boolean) => void) {
       toast.success('Загрузка завершена');
     } catch (e) {
       console.error(e);
-      toast.error('Не удалось произвести загрузку');
+      if (String(e) === 'Download cancelled by user') {
+        toast.info('Загрузка отменена');
+      } else {
+        toast.error('Не удалось произвести загрузку');
+      }
     } finally {
       setDownloading(false);
+    }
+  };
+
+  const cancelDownload = async () => {
+    try {
+      await invoke('cancel_download');
+    } catch (e) {
+      console.error(e);
+      toast.error('Не удалось отменить загрузку');
     }
   };
 
@@ -114,6 +127,7 @@ export function useDownloadProcess(setDownloading: (v: boolean) => void) {
     progress,
     startTime,
     startDownload,
+    cancelDownload,
     logsEndRef,
     isOffsetUrlDisabled,
     isDifferentBlogs,

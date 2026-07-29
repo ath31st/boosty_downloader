@@ -3,6 +3,7 @@ use std::sync::Arc;
 use boosty_downloader_core::{AppConfig, DownloadOptions, log_error, log_info};
 use tauri::State;
 use tokio::sync::Mutex;
+use tokio_util::sync::CancellationToken;
 
 use crate::state::AppState;
 
@@ -64,10 +65,19 @@ pub async fn download_content(
     download_options: DownloadOptions,
     state: State<'_, Arc<Mutex<AppState>>>,
 ) -> Result<(), String> {
-    let state = state.lock().await;
+    let (client, cfg, token) = {
+        let mut state = state.lock().await;
+        if state.download_token.is_some() {
+            return Err("Download is already in progress".to_string());
+        }
 
-    let client = &state.client.as_ref().ok_or("Client not initialized")?;
-    let cfg = &state.config;
+        let token = CancellationToken::new();
+        state.download_token = Some(token.clone());
+
+        let client = state.client.as_ref().ok_or("Client not initialized")?.clone();
+        let cfg = state.config.clone();
+        (client, cfg, token)
+    };
 
     let ctx =
         boosty_downloader_core::build_url_context(&url, offset_url.as_deref()).map_err(|e| {
@@ -75,13 +85,40 @@ pub async fn download_content(
             e.to_string()
         })?;
 
-    boosty_downloader_core::process_boosty_url(client, cfg, &ctx.url, ctx.offset, download_options)
-        .await
-        .map_err(|e| {
-            log_error!("{e}");
-            e.to_string()
-        })?;
+    let result = boosty_downloader_core::process_boosty_url(
+        &client,
+        &cfg,
+        &ctx.url,
+        ctx.offset,
+        download_options,
+        &token,
+    )
+    .await;
 
+    {
+        let mut state = state.lock().await;
+        state.download_token = None;
+    }
+
+    result.map_err(|e| {
+        if !boosty_downloader_core::is_cancelled_error(&e) {
+            log_error!("{e:#}");
+        }
+        if boosty_downloader_core::is_cancelled_error(&e) {
+            boosty_downloader_core::DOWNLOAD_CANCELLED_MESSAGE.to_string()
+        } else {
+            e.to_string()
+        }
+    })
+}
+
+#[tauri::command]
+pub async fn cancel_download(state: State<'_, Arc<Mutex<AppState>>>) -> Result<(), String> {
+    let state = state.lock().await;
+    if let Some(token) = &state.download_token {
+        token.cancel();
+        log_info!("{}", boosty_downloader_core::DOWNLOAD_CANCELLED_MESSAGE);
+    }
     Ok(())
 }
 

@@ -27,6 +27,7 @@ pub fn run() {
             commands::update_config,
             commands::init_client,
             commands::download_content,
+            commands::cancel_download,
             commands::get_download_path,
         ])
         .run(tauri::generate_context!())

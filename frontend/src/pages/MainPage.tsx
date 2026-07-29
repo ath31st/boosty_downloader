@@ -2,7 +2,7 @@ import { Button } from '../components/Button';
 import { DownloadProgress } from '@/components/DownloadProgress';
 import { formatLog } from '@/components/FormatLog';
 import { OpenFolderButton } from '@/components/OpenFolderButton';
-import { DownloadIcon } from 'lucide-react';
+import { DownloadIcon, Square } from 'lucide-react';
 import { Input } from '@/components/Input';
 import { useDownloadProcess } from '@/hooks/useDownloadProcess';
 import { HintIcon } from '@/components/HintIcon';
@@ -26,6 +26,7 @@ export default function MainPage({
     progress,
     startTime,
     startDownload,
+    cancelDownload,
     logsEndRef,
     isOffsetUrlDisabled,
     isDifferentBlogs,
@@ -51,17 +52,18 @@ export default function MainPage({
             disabled={isDownloading}
             className="flex-1"
           />
-          <Button
-            onClick={startDownload}
-            disabled={
-              isDownloading ||
-              !url ||
-              isDifferentBlogs ||
-              downloadOptions.length === 0
-            }
-          >
-            <DownloadIcon />
-          </Button>
+          {isDownloading ? (
+            <Button onClick={cancelDownload} aria-label="Stop">
+              <Square className="fill-current" />
+            </Button>
+          ) : (
+            <Button
+              onClick={startDownload}
+              disabled={!url || isDifferentBlogs || downloadOptions.length === 0}
+            >
+              <DownloadIcon />
+            </Button>
+          )}
         </div>
         {urlError && <p className="text-(--error) text-sm">{urlError}</p>}
         <div className="relative flex flex-1 flex-row gap-4">
