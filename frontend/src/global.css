@@ -53,3 +53,18 @@ body {
   color: var(--text);
   font-family: sans-serif;
 }
+
+@keyframes progress-indeterminate {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(400%);
+  }
+}
+
+.progress-indeterminate {
+  width: 33%;
+  animation: progress-indeterminate 1.2s ease-in-out infinite;
+}
+

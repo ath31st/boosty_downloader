@@ -24,7 +24,6 @@ export default function MainPage({
     setOffsetUrl,
     logs,
     progress,
-    startTime,
     startDownload,
     cancelDownload,
     logsEndRef,
@@ -108,9 +107,12 @@ export default function MainPage({
       </div>
 
       <DownloadProgress
+        filesDone={progress.files_done}
+        filesTotal={progress.files_total}
+        fileName={progress.file_name}
         current={progress.current}
         total={progress.total}
-        startTime={startTime ?? Date.now()}
+        isDownloading={isDownloading}
       />
     </div>
   );

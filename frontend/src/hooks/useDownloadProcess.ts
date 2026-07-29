@@ -21,8 +21,13 @@ export function useDownloadProcess(setDownloading: (v: boolean) => void) {
   });
 
   const [logs, setLogs] = useState<LogMessage[]>([]);
-  const [progress, setProgress] = useState({ current: 0, total: 0 });
-  const [startTime, setStartTime] = useState<number | null>(null);
+  const [progress, setProgress] = useState({
+    files_done: 0,
+    files_total: 0,
+    file_name: null as string | null,
+    current: 0,
+    total: 0,
+  });
   const { urlError, validateUrl } = useUrlValidation();
   const logsEndRef = useRef<HTMLDivElement>(null);
   const [downloadOptions, setDownloadOptions] = useState<DownloadOptions>([
@@ -70,8 +75,13 @@ export function useDownloadProcess(setDownloading: (v: boolean) => void) {
     }
 
     setLogs([]);
-    setProgress({ current: 0, total: 0 });
-    setStartTime(Date.now());
+    setProgress({
+      files_done: 0,
+      files_total: 0,
+      file_name: null,
+      current: 0,
+      total: 0,
+    });
     setDownloading(true);
 
     try {
@@ -90,6 +100,13 @@ export function useDownloadProcess(setDownloading: (v: boolean) => void) {
       }
     } finally {
       setDownloading(false);
+      setProgress({
+        files_done: 0,
+        files_total: 0,
+        file_name: null,
+        current: 0,
+        total: 0,
+      });
     }
   };
 
@@ -125,7 +142,6 @@ export function useDownloadProcess(setDownloading: (v: boolean) => void) {
     urlError,
     logs,
     progress,
-    startTime,
     startDownload,
     cancelDownload,
     logsEndRef,
