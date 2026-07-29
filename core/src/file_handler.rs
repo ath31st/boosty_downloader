@@ -11,6 +11,7 @@ use std::path::{Path, PathBuf};
 use std::time::Duration;
 use tokio::fs;
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
+use tokio_util::sync::CancellationToken;
 
 pub enum DownloadResult {
     Error(String),
@@ -88,7 +89,9 @@ pub async fn download_text_content(
     post_title: &str,
     content: &str,
     modificator: Option<&str>,
+    cancel_token: &CancellationToken,
 ) -> Result<DownloadResult> {
+    crate::ensure_not_cancelled(cancel_token)?;
     let safe_name = sanitize_name(post_title);
     let output_path = folder_path.join(format!("{safe_name}.md"));
     let hashes_path = folder_path.join(".hashes");
@@ -127,10 +130,12 @@ async fn download_file_content(
     url: &str,
     title: &str,
     signed_query: Option<&str>,
+    cancel_token: &CancellationToken,
 ) -> Result<DownloadResult> {
     log_info!("Downloading file '{title}'...");
     for attempt in 1..=MAX_RETRIES {
-        match download_file_once(folder_path, url, title, signed_query).await {
+        crate::ensure_not_cancelled(cancel_token)?;
+        match download_file_once(folder_path, url, title, signed_query, cancel_token).await {
             Ok(r @ DownloadResult::Success) => return Ok(r),
             Ok(r @ DownloadResult::Skipped) => return Ok(r),
             Ok(DownloadResult::Error(ref msg)) if !is_retriable_download_error(msg) => {
@@ -138,6 +143,12 @@ async fn download_file_content(
             }
             Ok(DownloadResult::Error(_)) if attempt < MAX_RETRIES => {
                 log_warn!("Download attempt {attempt} failed (logical error), retrying...");
+            }
+            Err(e) if crate::is_cancelled_error(&e) => {
+                let safe_name = sanitize_name(title);
+                let output_path = folder_path.join(safe_name);
+                let _ = fs::remove_file(&output_path).await;
+                return Err(e);
             }
             Err(e) if attempt < MAX_RETRIES => {
                 log_error!("Download attempt {attempt} failed with error: {e}");
@@ -149,7 +160,10 @@ async fn download_file_content(
         let output_path = folder_path.join(safe_name);
         let _ = fs::remove_file(&output_path).await;
 
-        tokio::time::sleep(Duration::from_secs(2_u64.pow(attempt as u32))).await;
+        tokio::select! {
+            _ = tokio::time::sleep(Duration::from_secs(2_u64.pow(attempt as u32))) => {}
+            _ = cancel_token.cancelled() => anyhow::bail!(crate::DOWNLOAD_CANCELLED_MESSAGE),
+        }
     }
     unreachable!("MAX_RETRIES exhausted but loop should return earlier")
 }
@@ -169,7 +183,9 @@ pub async fn download_file_once(
     url: &str,
     title: &str,
     signed_query: Option<&str>,
+    cancel_token: &CancellationToken,
 ) -> Result<DownloadResult> {
+    crate::ensure_not_cancelled(cancel_token)?;
     let safe_name = sanitize_name(title);
     let output_path = folder_path.join(safe_name);
 
@@ -215,6 +231,7 @@ pub async fn download_file_once(
     let mut stream = resp.bytes_stream();
 
     while let Some(chunk) = stream.next().await {
+        crate::ensure_not_cancelled(cancel_token)?;
         let chunk = chunk.with_context(|| format!("Error while reading chunk from '{url}'"))?;
         file.write_all(&chunk).await?;
         reporter.inc(chunk.len() as u64);
@@ -325,8 +342,10 @@ pub async fn process_file_and_markdown(
     markdown_content: &str,
     post_title: &str,
     signed_query: Option<&str>,
+    cancel_token: &CancellationToken,
 ) -> Result<DownloadResult> {
-    download_file_content(folder_path, url, file_name, signed_query)
+    crate::ensure_not_cancelled(cancel_token)?;
+    download_file_content(folder_path, url, file_name, signed_query, cancel_token)
         .await
         .with_context(|| {
             format!("Failed to download file '{file_name}' for post '{post_title}'")
@@ -342,7 +361,7 @@ pub async fn process_file_and_markdown(
 
     let markdown = markdown_content.replace("{rel}", &rel);
 
-    let download_res = download_text_content(folder_path, post_title, &markdown, None)
+    let download_res = download_text_content(folder_path, post_title, &markdown, None, cancel_token)
         .await
         .with_context(|| {
             format!("Failed to add markdown for '{file_name}' in post '{post_title}'")

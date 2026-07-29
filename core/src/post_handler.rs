@@ -5,6 +5,7 @@ use anyhow::{Context, Result};
 use boosty_api::model::Post;
 use boosty_api::traits::{HasContent, HasTitle, IsAvailable};
 use std::path::{Path, PathBuf};
+use tokio_util::sync::CancellationToken;
 
 pub enum PostsResult {
     Multiple(Vec<Post>),
@@ -15,17 +16,28 @@ pub async fn process_posts(
     result: PostsResult,
     download_path: &Path,
     download_options: DownloadOptions,
+    cancel_token: &CancellationToken,
 ) -> Result<()> {
     match result {
         PostsResult::Multiple(posts) => {
             for post in posts {
-                if let Err(e) = process(&post, download_path, download_options.clone()).await {
+                crate::ensure_not_cancelled(cancel_token)?;
+                if let Err(e) =
+                    process(&post, download_path, download_options.clone(), cancel_token).await
+                {
+                    if crate::is_cancelled_error(&e) {
+                        return Err(e);
+                    }
                     log_error!("Error processing post '{}': {:#}", post.safe_title(), e);
                 }
             }
         }
         PostsResult::Single(post) => {
-            if let Err(e) = process(&post, download_path, download_options).await {
+            crate::ensure_not_cancelled(cancel_token)?;
+            if let Err(e) = process(&post, download_path, download_options, cancel_token).await {
+                if crate::is_cancelled_error(&e) {
+                    return Err(e);
+                }
                 log_error!("Error processing post '{}': {:#}", post.safe_title(), e);
             }
         }
@@ -37,7 +49,9 @@ async fn process(
     post: &Post,
     download_path: &Path,
     download_options: DownloadOptions,
+    cancel_token: &CancellationToken,
 ) -> Result<()> {
+    crate::ensure_not_cancelled(cancel_token)?;
     if !check_available_post(post) {
         return Ok(());
     }
@@ -57,6 +71,7 @@ async fn process(
         post_title,
         &post_folder_path,
         Some(&post.signed_query),
+        cancel_token,
     )
     .await?;
 

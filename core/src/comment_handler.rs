@@ -7,6 +7,7 @@ use boosty_api::{
     traits::{HasContent, IsAvailable},
 };
 use chrono::{DateTime, Utc};
+use tokio_util::sync::CancellationToken;
 
 use crate::{
     DownloadOptions, cli, content_items_handler, download_options, file_handler, log_error,
@@ -23,16 +24,28 @@ pub async fn process_comments(
     results: Vec<CommentsResult>,
     download_path: &Path,
     download_options: DownloadOptions,
+    cancel_token: &CancellationToken,
 ) -> Result<()> {
     if results.is_empty() {
         return Ok(());
     }
 
     for result in results {
+        crate::ensure_not_cancelled(cancel_token)?;
         let post_title = &result.safe_post_title;
 
-        if let Err(e) = process_one(&result, post_title, download_path, download_options.clone()).await
+        if let Err(e) = process_one(
+            &result,
+            post_title,
+            download_path,
+            download_options.clone(),
+            cancel_token,
+        )
+        .await
         {
+            if crate::is_cancelled_error(&e) {
+                return Err(e);
+            }
             log_error!(
                 "Error processing comments for post '{}': {:#}",
                 result.safe_post_title,
@@ -48,7 +61,9 @@ async fn process_one(
     post_title: &str,
     download_path: &Path,
     download_options: DownloadOptions,
+    cancel_token: &CancellationToken,
 ) -> Result<()> {
+    crate::ensure_not_cancelled(cancel_token)?;
     let post_folder_path: PathBuf = file_handler::prepare_folder_path(
         &result.blog_url,
         post_title,
@@ -65,6 +80,7 @@ async fn process_one(
         &comments_folder_path,
         post_title,
         download_options,
+        cancel_token,
     )
     .await
     .with_context(|| {
@@ -90,7 +106,9 @@ async fn process(
     comments_folder_path: &Path,
     post_title: &str,
     download_options: DownloadOptions,
+    cancel_token: &CancellationToken,
 ) -> Result<()> {
+    crate::ensure_not_cancelled(cancel_token)?;
     if !check_available_comments(&cr.comments, &cr.safe_post_title) {
         return Ok(());
     }
@@ -109,6 +127,7 @@ async fn process(
         post_title,
         comments_folder_path,
         None,
+        cancel_token,
     )
     .await?;
 

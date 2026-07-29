@@ -2,21 +2,34 @@ use crate::{cli, file_handler, log_error, parser};
 use anyhow::{Context, Result};
 use boosty_api::media_content::ContentItem;
 use std::path::Path;
+use tokio_util::sync::CancellationToken;
 
 pub async fn process_content_items(
     items: Vec<ContentItem>,
     post_title: &str,
     folder_path: &Path,
     signed_query: Option<&str>,
+    cancel_token: &CancellationToken,
 ) -> Result<()> {
     let rel_literal = "{rel}";
     let mut stack = items.into_iter().rev().collect::<Vec<_>>();
 
     while let Some(item) = stack.pop() {
-        if let Err(e) =
-            process_one_item(item, post_title, folder_path, signed_query, rel_literal, &mut stack)
-                .await
+        crate::ensure_not_cancelled(cancel_token)?;
+        if let Err(e) = process_one_item(
+            item,
+            post_title,
+            folder_path,
+            signed_query,
+            rel_literal,
+            &mut stack,
+            cancel_token,
+        )
+        .await
         {
+            if crate::is_cancelled_error(&e) {
+                return Err(e);
+            }
             log_error!("Error processing content item for post '{post_title}': {e:#}");
         }
     }
@@ -31,7 +44,9 @@ async fn process_one_item(
     signed_query: Option<&str>,
     rel_literal: &str,
     stack: &mut Vec<ContentItem>,
+    cancel_token: &CancellationToken,
 ) -> Result<()> {
+    crate::ensure_not_cancelled(cancel_token)?;
     match item {
         ContentItem::Image { url, id } => {
             let image_name = format!("{id}.jpg");
@@ -45,6 +60,7 @@ async fn process_one_item(
                 &image_markdown,
                 post_title,
                 None,
+                cancel_token,
             )
             .await?;
 
@@ -64,7 +80,13 @@ async fn process_one_item(
             );
 
             let download_res =
-                file_handler::download_text_content(folder_path, post_title, &video_markdown, None)
+                file_handler::download_text_content(
+                    folder_path,
+                    post_title,
+                    &video_markdown,
+                    None,
+                    cancel_token,
+                )
                     .await
                     .with_context(|| {
                         format!("Failed to embed video url '{url}' for post '{post_title}'")
@@ -85,6 +107,7 @@ async fn process_one_item(
                 &video_markdown,
                 post_title,
                 None,
+                cancel_token,
             )
             .await?;
 
@@ -102,6 +125,7 @@ async fn process_one_item(
                 &audio_markdown,
                 post_title,
                 signed_query,
+                cancel_token,
             )
             .await
             .with_context(|| {
@@ -120,6 +144,7 @@ async fn process_one_item(
                 &file_markdown,
                 post_title,
                 signed_query,
+                cancel_token,
             )
             .await
             .with_context(|| format!("Failed to process file '{title}' for post '{post_title}'"))?;
@@ -136,6 +161,7 @@ async fn process_one_item(
                     post_title,
                     &parsed,
                     Some(&modificator),
+                    cancel_token,
                 )
                 .await
                 .with_context(|| {
@@ -157,6 +183,7 @@ async fn process_one_item(
                 &smile_content,
                 post_title,
                 None,
+                cancel_token,
             )
             .await?;
 
@@ -165,7 +192,13 @@ async fn process_one_item(
         ContentItem::Link { content, url, .. } => {
             if let Some(parsed) = parser::parse_link_content(&content, &url) {
                 let download_res =
-                    file_handler::download_text_content(folder_path, post_title, &parsed, None)
+                    file_handler::download_text_content(
+                        folder_path,
+                        post_title,
+                        &parsed,
+                        None,
+                        cancel_token,
+                    )
                         .await
                         .with_context(|| {
                             format!("Failed to download link '{url}' for post '{post_title}'")
@@ -185,3 +218,5 @@ async fn process_one_item(
 
     Ok(())
 }
+
+

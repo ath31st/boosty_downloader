@@ -14,6 +14,7 @@ use boosty_api::api_client::ApiClient;
 use boosty_api::traits::HasTitle;
 use boosty_api::traits::IsAvailable;
 use std::path::Path;
+use tokio_util::sync::CancellationToken;
 
 pub async fn handle_menu(client: &ApiClient) -> Result<bool> {
     let selected_menu = cli::read_input_menu();
@@ -34,7 +35,15 @@ pub async fn handle_menu(client: &ApiClient) -> Result<bool> {
                 let ctx = url_context::build_url_context(&input, offset_opt)?;
 
                 if let Err(e) =
-                    process_boosty_url(client, &cfg, &ctx.url, ctx.offset, download_options).await
+                    process_boosty_url(
+                        client,
+                        &cfg,
+                        &ctx.url,
+                        ctx.offset,
+                        download_options,
+                        &CancellationToken::new(),
+                    )
+                    .await
                 {
                     log_error!("{:#}", e);
                 };
@@ -142,9 +151,12 @@ pub async fn process_boosty_url(
     url: &BoostyUrl,
     offset_url: Option<BoostyUrl>,
     download_options: DownloadOptions,
+    cancel_token: &CancellationToken,
 ) -> Result<()> {
+    crate::ensure_not_cancelled(cancel_token)?;
     let offset: Option<String> = match offset_url {
         Some(BoostyUrl::Post { blog, post_id }) => {
+            crate::ensure_not_cancelled(cancel_token)?;
             let offset_post = client.get_post(&blog, &post_id).await?;
             Some(format!("{}:{}", offset_post.sort_order, offset_post.int_id))
         }
@@ -153,6 +165,7 @@ pub async fn process_boosty_url(
 
     let result = match &url {
         BoostyUrl::Blog(blog) => {
+            crate::ensure_not_cancelled(cancel_token)?;
             let multiple = client
                 .get_posts(blog, cfg.posts_limit, None, offset)
                 .await
@@ -160,6 +173,7 @@ pub async fn process_boosty_url(
             post_handler::PostsResult::Multiple(multiple)
         }
         BoostyUrl::Post { blog, post_id } => {
+            crate::ensure_not_cancelled(cancel_token)?;
             let single = client.get_post(blog, post_id).await.map_err(|e| {
                 anyhow!("Failed to fetch post '{post_id}' for blog '{blog}', {}", e)
             })?;
@@ -201,7 +215,7 @@ pub async fn process_boosty_url(
 
     let download_path = &config::get_download_path(cfg);
 
-    post_handler::process_posts(result, download_path, download_options.clone())
+    post_handler::process_posts(result, download_path, download_options.clone(), cancel_token)
         .await
         .with_context(|| {
             format!(
@@ -217,6 +231,7 @@ pub async fn process_boosty_url(
         let mut comments_results = Vec::new();
 
         for (blog_url, post_id, safe_post_title, created_at) in comment_targets {
+            crate::ensure_not_cancelled(cancel_token)?;
             match client
                 .get_all_comments(
                     &blog_url,
@@ -241,10 +256,17 @@ pub async fn process_boosty_url(
             }
         }
 
-        if let Err(e) =
-            comment_handler::process_comments(comments_results, download_path, download_options)
-                .await
+        if let Err(e) = comment_handler::process_comments(
+            comments_results,
+            download_path,
+            download_options,
+            cancel_token,
+        )
+        .await
         {
+            if crate::is_cancelled_error(&e) {
+                return Err(e);
+            }
             log_error!("Error while processing comments: {e:#}");
         }
     }
@@ -269,8 +291,15 @@ async fn process_batch_file(
         match url_context::build_url_context(&link, None) {
             Ok(ctx) => {
                 if let Err(e) =
-                    process_boosty_url(client, cfg, &ctx.url, ctx.offset, download_options.clone())
-                        .await
+                    process_boosty_url(
+                        client,
+                        cfg,
+                        &ctx.url,
+                        ctx.offset,
+                        download_options.clone(),
+                        &CancellationToken::new(),
+                    )
+                    .await
                 {
                     log_error!("Error processing link '{}': {e}", link);
                 }

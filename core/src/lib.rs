@@ -30,9 +30,23 @@ use anyhow::Result;
 use boosty_api::api_client::ApiClient;
 use reqwest::Client;
 use std::time::Duration;
+use tokio_util::sync::CancellationToken;
 
 const API_URL: &str = "https://api.boosty.to";
 const TIMEOUT_SECONDS: u64 = 10;
+pub const DOWNLOAD_CANCELLED_MESSAGE: &str = "Download cancelled by user";
+
+pub fn ensure_not_cancelled(token: &CancellationToken) -> Result<()> {
+    if token.is_cancelled() {
+        anyhow::bail!(DOWNLOAD_CANCELLED_MESSAGE);
+    }
+    Ok(())
+}
+
+pub fn is_cancelled_error(err: &anyhow::Error) -> bool {
+    err.chain()
+        .any(|cause| cause.to_string() == DOWNLOAD_CANCELLED_MESSAGE)
+}
 
 pub async fn make_client() -> Result<ApiClient> {
     let client = Client::builder()
