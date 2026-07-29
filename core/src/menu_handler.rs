@@ -6,7 +6,6 @@ use crate::config::AppConfig;
 use crate::file_handler;
 use crate::log_error;
 use crate::log_info;
-use crate::log_warn;
 use crate::parser::BoostyUrl;
 use crate::post_handler;
 use crate::url_context;
@@ -83,14 +82,11 @@ pub async fn handle_menu(client: &ApiClient) -> Result<bool> {
             }
         }
         4 => {
-            client.clear_refresh_and_device_id().await;
-            config::update_config(|cfg| {
-                cfg.access_token = String::new();
-                cfg.refresh_token = String::new();
-                cfg.device_id = String::new();
-            })
-            .await
-            .with_context(|| "Failed to clear tokens")?;
+            let mut cfg = config::load_config().await?;
+            config::clear_auth(client, &mut cfg).await?;
+            config::save_config(&cfg)
+                .await
+                .with_context(|| "Failed to clear tokens")?;
             cli::tokens_and_client_id_cleared();
         }
         5 => {
@@ -171,68 +167,37 @@ pub async fn process_boosty_url(
         }
     };
 
-    let mut comments_results = Vec::new();
-
-    // Загружаем комментарии только если они включены в настройках
-    if cfg.comments.enabled {
+    // Collect metadata for comments before posts are consumed by process_posts.
+    let comment_targets: Vec<(String, String, String, i64)> = if cfg.comments.enabled {
         match &result {
             post_handler::PostsResult::Single(post) => {
                 if post.not_available() {
-                    log_warn!("Post '{}' is not available, skipping.", post.id);
-                    return Ok(());
+                    Vec::new()
+                } else {
+                    vec![(
+                        post.user.blog_url.clone(),
+                        post.id.clone(),
+                        post.safe_title(),
+                        post.created_at,
+                    )]
                 }
-
-                let comments = client
-                    .get_all_comments(
-                        &post.user.blog_url,
-                        &post.id,
-                        cfg.comments.limit,
-                        cfg.comments.reply_limit,
-                        cfg.comments.order.as_deref(),
+            }
+            post_handler::PostsResult::Multiple(posts) => posts
+                .iter()
+                .filter(|p| !p.not_available())
+                .map(|p| {
+                    (
+                        p.user.blog_url.clone(),
+                        p.id.clone(),
+                        p.safe_title(),
+                        p.created_at,
                     )
-                    .await
-                    .with_context(|| format!("Failed to fetch comments for post '{}'", post.id))?;
-
-                comments_results.push(comment_handler::CommentsResult {
-                    comments,
-                    safe_post_title: post.safe_title(),
-                    created_at: post.created_at,
-                    blog_url: post.user.blog_url.clone(),
-                });
-            }
-
-            post_handler::PostsResult::Multiple(posts) if !posts.is_empty() => {
-                for post in posts {
-                    if post.not_available() {
-                        log_warn!("Post '{}' is not available, skipping.", post.id);
-                        continue;
-                    }
-
-                    let comments = client
-                        .get_all_comments(
-                            &post.user.blog_url,
-                            &post.id,
-                            cfg.comments.limit,
-                            cfg.comments.reply_limit,
-                            cfg.comments.order.as_deref(),
-                        )
-                        .await
-                        .with_context(|| {
-                            format!("Failed to fetch comments for post '{}'", post.id)
-                        })?;
-
-                    comments_results.push(comment_handler::CommentsResult {
-                        comments,
-                        safe_post_title: post.safe_title(),
-                        created_at: post.created_at,
-                        blog_url: post.user.blog_url.clone(),
-                    });
-                }
-            }
-
-            _ => {}
+                })
+                .collect(),
         }
-    }
+    } else {
+        Vec::new()
+    };
 
     let download_path = &config::get_download_path(cfg);
 
@@ -248,17 +213,41 @@ pub async fn process_boosty_url(
             )
         })?;
 
-    comment_handler::process_comments(comments_results, download_path, download_options)
-        .await
-        .with_context(|| {
-            format!(
-                "Error while processing comments for post: {}",
-                match &url {
-                    BoostyUrl::Blog(blog) => blog,
-                    BoostyUrl::Post { blog, .. } => blog,
+    if !comment_targets.is_empty() {
+        let mut comments_results = Vec::new();
+
+        for (blog_url, post_id, safe_post_title, created_at) in comment_targets {
+            match client
+                .get_all_comments(
+                    &blog_url,
+                    &post_id,
+                    cfg.comments.limit,
+                    cfg.comments.reply_limit,
+                    cfg.comments.order.as_deref(),
+                )
+                .await
+            {
+                Ok(comments) => {
+                    comments_results.push(comment_handler::CommentsResult {
+                        comments,
+                        safe_post_title,
+                        created_at,
+                        blog_url,
+                    });
                 }
-            )
-        })?;
+                Err(e) => {
+                    log_error!("Failed to fetch comments for post '{post_id}': {e:#}");
+                }
+            }
+        }
+
+        if let Err(e) =
+            comment_handler::process_comments(comments_results, download_path, download_options)
+                .await
+        {
+            log_error!("Error while processing comments: {e:#}");
+        }
+    }
 
     Ok(())
 }

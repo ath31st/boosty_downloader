@@ -95,6 +95,7 @@ export default function MainPage({
       <div className="h-65 overflow-y-auto rounded-lg border border-(--border) bg-(--secondary-bg) p-2">
         {logs.map((msg, index) => (
           <p
+            // biome-ignore lint/suspicious/noArrayIndexKey: normal index
             key={`${index}-${msg.level}-${msg.message}`}
             className="text-(--meta-text) text-sm"
           >

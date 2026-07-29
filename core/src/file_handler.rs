@@ -133,7 +133,10 @@ async fn download_file_content(
         match download_file_once(folder_path, url, title, signed_query).await {
             Ok(r @ DownloadResult::Success) => return Ok(r),
             Ok(r @ DownloadResult::Skipped) => return Ok(r),
-            Ok(_r @ DownloadResult::Error(_)) if attempt < MAX_RETRIES => {
+            Ok(DownloadResult::Error(ref msg)) if !is_retriable_download_error(msg) => {
+                return Ok(DownloadResult::Error(msg.clone()));
+            }
+            Ok(DownloadResult::Error(_)) if attempt < MAX_RETRIES => {
                 log_warn!("Download attempt {attempt} failed (logical error), retrying...");
             }
             Err(e) if attempt < MAX_RETRIES => {
@@ -149,6 +152,16 @@ async fn download_file_content(
         tokio::time::sleep(Duration::from_secs(2_u64.pow(attempt as u32))).await;
     }
     unreachable!("MAX_RETRIES exhausted but loop should return earlier")
+}
+
+fn is_retriable_download_error(msg: &str) -> bool {
+    if msg.contains("Authorization required") {
+        return false;
+    }
+    if msg.contains("HTTP 401") || msg.contains("HTTP 403") || msg.contains("HTTP 404") {
+        return false;
+    }
+    true
 }
 
 pub async fn download_file_once(
@@ -187,8 +200,9 @@ pub async fn download_file_once(
         .await
         .with_context(|| format!("HTTP GET failed for file URL '{url}'"))?;
     if !resp.status().is_success() {
+        let status = resp.status();
         let error_body = resp.text().await.unwrap_or_default();
-        return Ok(DownloadResult::Error(format!("HTTP {error_body}")));
+        return Ok(DownloadResult::Error(format!("HTTP {status}: {error_body}")));
     }
 
     let total_size = resp.content_length().unwrap_or(0);
@@ -318,7 +332,8 @@ pub async fn process_file_and_markdown(
             format!("Failed to download file '{file_name}' for post '{post_title}'")
         })?;
 
-    let full_path = folder_path.join(file_name);
+    let safe_name = sanitize_name(file_name);
+    let full_path = folder_path.join(&safe_name);
     let rel = full_path
         .strip_prefix(folder_path)
         .unwrap_or(&full_path)

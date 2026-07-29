@@ -8,7 +8,9 @@ use boosty_api::{
 };
 use chrono::{DateTime, Utc};
 
-use crate::{DownloadOptions, cli, content_items_handler, download_options, file_handler};
+use crate::{
+    DownloadOptions, cli, content_items_handler, download_options, file_handler, log_error,
+};
 
 pub struct CommentsResult {
     pub comments: Vec<Comment>,
@@ -29,39 +31,57 @@ pub async fn process_comments(
     for result in results {
         let post_title = &result.safe_post_title;
 
-        let post_folder_path: PathBuf = file_handler::prepare_folder_path(
-            &result.blog_url,
-            post_title,
-            result.created_at,
-            download_path,
-        )
-        .await?;
-
-        let comments_folder_path: PathBuf =
-            file_handler::prepare_folder_path_for_comments(&post_folder_path).await?;
-
-        process(
-            &result,
-            &comments_folder_path,
-            post_title,
-            download_options.clone(),
-        )
-        .await
-        .with_context(|| {
-            format!(
-                "Error processing comments for post '{}'",
-                result.safe_post_title
-            )
-        })?;
-
-        file_handler::normalize_md_file(&comments_folder_path, post_title)
-            .await
-            .with_context(|| format!("Failed to normalize '{post_title}.md' for comments"))?;
-
-        file_handler::convert_markdown_file_to_html(&comments_folder_path, post_title)
-            .await
-            .with_context(|| format!("Failed to convert '{post_title}.md' to HTML"))?;
+        if let Err(e) = process_one(&result, post_title, download_path, download_options.clone()).await
+        {
+            log_error!(
+                "Error processing comments for post '{}': {:#}",
+                result.safe_post_title,
+                e
+            );
+        }
     }
+    Ok(())
+}
+
+async fn process_one(
+    result: &CommentsResult,
+    post_title: &str,
+    download_path: &Path,
+    download_options: DownloadOptions,
+) -> Result<()> {
+    let post_folder_path: PathBuf = file_handler::prepare_folder_path(
+        &result.blog_url,
+        post_title,
+        result.created_at,
+        download_path,
+    )
+    .await?;
+
+    let comments_folder_path: PathBuf =
+        file_handler::prepare_folder_path_for_comments(&post_folder_path).await?;
+
+    process(
+        result,
+        &comments_folder_path,
+        post_title,
+        download_options,
+    )
+    .await
+    .with_context(|| {
+        format!(
+            "Error processing comments for post '{}'",
+            result.safe_post_title
+        )
+    })?;
+
+    file_handler::normalize_md_file(&comments_folder_path, post_title)
+        .await
+        .with_context(|| format!("Failed to normalize '{post_title}.md' for comments"))?;
+
+    file_handler::convert_markdown_file_to_html(&comments_folder_path, post_title)
+        .await
+        .with_context(|| format!("Failed to convert '{post_title}.md' to HTML"))?;
+
     Ok(())
 }
 

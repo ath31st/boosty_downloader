@@ -16,7 +16,7 @@ pub(crate) mod url_context;
 
 pub use cli::print_error;
 pub use config::{
-    AppConfig, CommentsConfig, get_download_path, load_config, save_config, sync_auth,
+    AppConfig, CommentsConfig, clear_auth, get_download_path, load_config, save_config, sync_auth,
 };
 pub use console_logger::ConsoleLogger;
 pub use download_options::{
@@ -48,7 +48,7 @@ pub async fn make_client() -> Result<ApiClient> {
 pub async fn init_client(client: &ApiClient) -> Result<()> {
     checks::check_api(client).await?;
     let mut cfg = config::load_config().await?;
-    config::sync_auth(client, &mut cfg).await?;
+    config::sync_auth(client, &mut cfg, None).await?;
     config::save_config(&cfg).await?;
     Ok(())
 }

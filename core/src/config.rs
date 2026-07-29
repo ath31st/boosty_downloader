@@ -123,8 +123,25 @@ where
     Ok(cfg)
 }
 
-pub async fn sync_auth(client: &ApiClient, cfg: &mut AppConfig) -> Result<()> {
-    if !cfg.refresh_token.is_empty() && !cfg.device_id.is_empty() {
+/// Apply auth from config to the API client.
+///
+/// Performs a network refresh only when:
+/// - refresh token + device ID are set, and
+/// - access token is empty, or refresh credentials changed compared to `previous`.
+///
+/// Otherwise just applies the existing access token (or clears auth).
+pub async fn sync_auth(
+    client: &ApiClient,
+    cfg: &mut AppConfig,
+    previous: Option<&AppConfig>,
+) -> Result<()> {
+    let has_refresh = !cfg.refresh_token.is_empty() && !cfg.device_id.is_empty();
+    let refresh_changed = previous.is_some_and(|prev| {
+        prev.refresh_token != cfg.refresh_token || prev.device_id != cfg.device_id
+    });
+    let needs_refresh = has_refresh && (cfg.access_token.is_empty() || refresh_changed);
+
+    if needs_refresh {
         client
             .set_refresh_token_and_device_id(&cfg.refresh_token, &cfg.device_id)
             .await?;
@@ -140,9 +157,18 @@ pub async fn sync_auth(client: &ApiClient, cfg: &mut AppConfig) -> Result<()> {
         client.set_bearer_token(&cfg.access_token).await?;
         cli::access_token_set(&cfg.access_token);
     } else {
-        client.clear_access_token().await;
-        client.clear_refresh_and_device_id().await;
+        clear_auth(client, cfg).await?;
     }
 
+    Ok(())
+}
+
+/// Clear all auth credentials on the client and in the given config.
+pub async fn clear_auth(client: &ApiClient, cfg: &mut AppConfig) -> Result<()> {
+    client.clear_access_token().await;
+    client.clear_refresh_and_device_id().await;
+    cfg.access_token.clear();
+    cfg.refresh_token.clear();
+    cfg.device_id.clear();
     Ok(())
 }

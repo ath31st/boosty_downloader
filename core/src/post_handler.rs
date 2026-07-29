@@ -1,4 +1,6 @@
-use crate::{DownloadOptions, cli, content_items_handler, download_options, file_handler};
+use crate::{
+    DownloadOptions, cli, content_items_handler, download_options, file_handler, log_error,
+};
 use anyhow::{Context, Result};
 use boosty_api::model::Post;
 use boosty_api::traits::{HasContent, HasTitle, IsAvailable};
@@ -17,15 +19,15 @@ pub async fn process_posts(
     match result {
         PostsResult::Multiple(posts) => {
             for post in posts {
-                process(&post, download_path, download_options.clone())
-                    .await
-                    .with_context(|| format!("Error processing post '{}'", post.safe_title()))?;
+                if let Err(e) = process(&post, download_path, download_options.clone()).await {
+                    log_error!("Error processing post '{}': {:#}", post.safe_title(), e);
+                }
             }
         }
         PostsResult::Single(post) => {
-            process(&post, download_path, download_options)
-                .await
-                .with_context(|| format!("Error processing post '{}'", post.safe_title()))?;
+            if let Err(e) = process(&post, download_path, download_options).await {
+                log_error!("Error processing post '{}': {:#}", post.safe_title(), e);
+            }
         }
     }
     Ok(())
