@@ -1,4 +1,6 @@
-use crate::{DownloadOption, DownloadOptions, file_handler::DownloadResult, log_error, log_info};
+use crate::{
+    DownloadOption, DownloadOptions, file_handler::DownloadResult, log_error, log_info, log_warn,
+};
 use anyhow::Error;
 use dialoguer::{Input, MultiSelect, Select, theme::ColorfulTheme};
 use std::{
@@ -299,15 +301,11 @@ pub fn tokens_and_client_id_cleared() {
 }
 
 pub fn post_not_available_or_without_content(post_title: &str) {
-    warning(&format!(
-        "Post '{post_title}' not available or has no content",
-    ));
+    log_warn!("Post '{post_title}' not available or has no content");
 }
 
 pub fn comments_for_post_empty_or_not_available(post_title: &str) {
-    warning(&format!(
-        "Comments for post '{post_title}' empty or not available",
-    ));
+    log_warn!("Comments for post '{post_title}' empty or not available");
 }
 
 pub fn comments_toggled(status: &str) {
