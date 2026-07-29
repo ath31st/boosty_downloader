@@ -1,5 +1,6 @@
 use crate::{
     DownloadOptions, cli, content_items_handler, download_options, file_handler, log_error,
+    progress_reporter,
 };
 use anyhow::{Context, Result};
 use boosty_api::model::Post;
@@ -10,6 +11,29 @@ use tokio_util::sync::CancellationToken;
 pub enum PostsResult {
     Multiple(Vec<Post>),
     Single(Box<Post>),
+}
+
+pub fn count_downloadable_files(result: &PostsResult, download_options: &DownloadOptions) -> u64 {
+    match result {
+        PostsResult::Multiple(posts) => posts
+            .iter()
+            .filter(|p| !p.not_available())
+            .map(|p| count_post_files(p, download_options))
+            .sum(),
+        PostsResult::Single(post) => {
+            if post.not_available() {
+                0
+            } else {
+                count_post_files(post, download_options)
+            }
+        }
+    }
+}
+
+fn count_post_files(post: &Post, download_options: &DownloadOptions) -> u64 {
+    let items = post.extract_content();
+    let filtered = download_options::filter_content_items(items, download_options);
+    progress_reporter::count_downloadable_files(&filtered)
 }
 
 pub async fn process_posts(

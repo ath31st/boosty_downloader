@@ -11,6 +11,7 @@ use tokio_util::sync::CancellationToken;
 
 use crate::{
     DownloadOptions, cli, content_items_handler, download_options, file_handler, log_error,
+    progress_reporter,
 };
 
 pub struct CommentsResult {
@@ -29,6 +30,9 @@ pub async fn process_comments(
     if results.is_empty() {
         return Ok(());
     }
+
+    let extra_files = count_downloadable_files(&results, &download_options);
+    progress_reporter::add_files_total(extra_files);
 
     for result in results {
         crate::ensure_not_cancelled(cancel_token)?;
@@ -177,4 +181,40 @@ fn check_available_comments(comments: &[Comment], post_title: &str) -> bool {
         return false;
     }
     true
+}
+
+pub fn count_downloadable_files(
+    results: &[CommentsResult],
+    download_options: &DownloadOptions,
+) -> u64 {
+    results
+        .iter()
+        .map(|result| {
+            if !check_available_for_count(&result.comments) {
+                return 0;
+            }
+            let items: Vec<ContentItem> = result
+                .comments
+                .iter()
+                .filter(|c| !c.not_available())
+                .flat_map(collect_items_for_count)
+                .collect();
+            let filtered = download_options::filter_content_items(items, download_options);
+            progress_reporter::count_downloadable_files(&filtered)
+        })
+        .sum()
+}
+
+fn check_available_for_count(comments: &[Comment]) -> bool {
+    !(comments.is_empty() || comments.iter().all(|c| c.not_available()))
+}
+
+fn collect_items_for_count(comment: &Comment) -> Vec<ContentItem> {
+    let mut items = comment.extract_content();
+    if let Some(replies) = &comment.replies {
+        for reply_group in replies.data.iter() {
+            items.extend(collect_items_for_count(reply_group));
+        }
+    }
+    items
 }

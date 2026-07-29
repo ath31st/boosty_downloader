@@ -17,6 +17,9 @@ pub struct LogMessage<'a> {
 
 #[derive(Serialize, Debug, Clone)]
 pub struct ProgressMessage {
+    pub files_done: u64,
+    pub files_total: u64,
+    pub file_name: Option<String>,
     pub current: u64,
     pub total: u64,
 }

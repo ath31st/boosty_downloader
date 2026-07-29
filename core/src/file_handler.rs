@@ -1,4 +1,4 @@
-use crate::progress_reporter::ProgressReporter;
+use crate::progress_reporter;
 use crate::{headers, log_error, log_info, log_warn};
 use anyhow::{Context, Result};
 use chrono::{DateTime, Utc};
@@ -136,24 +136,37 @@ async fn download_file_content(
     for attempt in 1..=MAX_RETRIES {
         crate::ensure_not_cancelled(cancel_token)?;
         match download_file_once(folder_path, url, title, signed_query, cancel_token).await {
-            Ok(r @ DownloadResult::Success) => return Ok(r),
-            Ok(r @ DownloadResult::Skipped) => return Ok(r),
+            Ok(r @ DownloadResult::Success) => {
+                progress_reporter::finish_file();
+                return Ok(r);
+            }
+            Ok(r @ DownloadResult::Skipped) => {
+                progress_reporter::finish_file();
+                return Ok(r);
+            }
             Ok(DownloadResult::Error(ref msg)) if !is_retriable_download_error(msg) => {
+                progress_reporter::finish_file();
                 return Ok(DownloadResult::Error(msg.clone()));
             }
             Ok(DownloadResult::Error(_)) if attempt < MAX_RETRIES => {
+                progress_reporter::abandon_file();
                 log_warn!("Download attempt {attempt} failed (logical error), retrying...");
             }
             Err(e) if crate::is_cancelled_error(&e) => {
+                progress_reporter::abandon_file();
                 let safe_name = sanitize_name(title);
                 let output_path = folder_path.join(safe_name);
                 let _ = fs::remove_file(&output_path).await;
                 return Err(e);
             }
             Err(e) if attempt < MAX_RETRIES => {
+                progress_reporter::abandon_file();
                 log_error!("Download attempt {attempt} failed with error: {e}");
             }
-            result => return result,
+            result => {
+                progress_reporter::finish_file();
+                return result;
+            }
         }
 
         let safe_name = sanitize_name(title);
@@ -222,8 +235,7 @@ pub async fn download_file_once(
     }
 
     let total_size = resp.content_length().unwrap_or(0);
-
-    let reporter = ProgressReporter::new(total_size)?;
+    progress_reporter::start_file(title, total_size)?;
 
     let mut file = fs::File::create(&output_path)
         .await
@@ -234,9 +246,8 @@ pub async fn download_file_once(
         crate::ensure_not_cancelled(cancel_token)?;
         let chunk = chunk.with_context(|| format!("Error while reading chunk from '{url}'"))?;
         file.write_all(&chunk).await?;
-        reporter.inc(chunk.len() as u64);
+        progress_reporter::inc(chunk.len() as u64);
     }
-    reporter.finish();
 
     Ok(DownloadResult::Success)
 }

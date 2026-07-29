@@ -8,6 +8,7 @@ use crate::log_error;
 use crate::log_info;
 use crate::parser::BoostyUrl;
 use crate::post_handler;
+use crate::progress_reporter;
 use crate::url_context;
 use anyhow::{Context, Result, anyhow};
 use boosty_api::api_client::ApiClient;
@@ -214,6 +215,8 @@ pub async fn process_boosty_url(
     };
 
     let download_path = &config::get_download_path(cfg);
+    let post_files = post_handler::count_downloadable_files(&result, &download_options);
+    let _progress = progress_reporter::SessionGuard::new(post_files);
 
     post_handler::process_posts(result, download_path, download_options.clone(), cancel_token)
         .await
