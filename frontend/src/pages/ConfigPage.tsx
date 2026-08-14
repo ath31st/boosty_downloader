@@ -24,8 +24,8 @@ export default function ConfigPage() {
 
   if (isLoading || !config) {
     return (
-      <div className="rounded-lg bg-(--background) p-4">
-        <p>Загрузка конфигурации...</p>
+      <div className="flex min-h-0 flex-1 items-center justify-center rounded-lg border border-(--border) bg-(--background) p-4 text-(--meta-text)">
+        Загрузка конфигурации...
       </div>
     );
   }
@@ -39,8 +39,8 @@ export default function ConfigPage() {
   };
 
   return (
-    <div className="flex flex-col items-center gap-6 rounded-lg border border-(--border) bg-(--background) p-4">
-      <div className="flex w-full flex-col gap-4">
+    <div className="flex min-h-0 flex-1 flex-col gap-4 rounded-lg border border-(--border) bg-(--background) p-4 text-(--text)">
+      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto">
         <Label>
           <HintIcon text="Максимальное количество постов для загрузки за одну сессию" />
           <ConfigLabel label="Лимит постов:" />
@@ -163,7 +163,7 @@ export default function ConfigPage() {
         </Label>
       </div>
 
-      <div className="flex gap-3">
+      <div className="flex shrink-0 justify-center gap-3">
         <Button
           className="w-50"
           onClick={handleSaveWithValidation}
@@ -171,14 +171,22 @@ export default function ConfigPage() {
         >
           {isSaving ? 'Сохраняем...' : 'Сохранить'}
         </Button>
-        <Button
-          className="w-50"
-          onClick={handleClearAuth}
-          disabled={isSaving}
-        >
+        <Button className="w-50" onClick={handleClearAuth} disabled={isSaving}>
           Очистить токены
         </Button>
       </div>
+      <p className="shrink-0 text-center text-(--meta-text) text-sm">
+        Если приложение понравилось, поставьте{' '}
+        <a
+          href="https://github.com/ath31st/boosty_downloader"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="underline hover:text-(--text)"
+        >
+          звезду проекту на GitHub
+        </a>
+        . Это бесплатно.
+      </p>
     </div>
   );
 }
