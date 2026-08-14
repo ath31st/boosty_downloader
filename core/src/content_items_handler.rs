@@ -6,6 +6,14 @@ use post_page::Block;
 use std::path::Path;
 use tokio_util::sync::CancellationToken;
 
+struct ContentCtx<'a> {
+    post_title: &'a str,
+    folder_path: &'a Path,
+    href_prefix: &'a str,
+    signed_query: Option<&'a str>,
+    cancel_token: &'a CancellationToken,
+}
+
 pub async fn process_content_items(
     items: Vec<ContentItem>,
     post_title: &str,
@@ -15,20 +23,17 @@ pub async fn process_content_items(
     cancel_token: &CancellationToken,
 ) -> Result<Vec<Block>> {
     let mut blocks = Vec::new();
+    let ctx = ContentCtx {
+        post_title,
+        folder_path,
+        href_prefix,
+        signed_query,
+        cancel_token,
+    };
 
     for item in items {
-        crate::ensure_not_cancelled(cancel_token)?;
-        if let Err(e) = process_one_item(
-            item,
-            post_title,
-            folder_path,
-            href_prefix,
-            signed_query,
-            &mut blocks,
-            cancel_token,
-        )
-        .await
-        {
+        crate::ensure_not_cancelled(ctx.cancel_token)?;
+        if let Err(e) = process_one_item(item, &ctx, &mut blocks).await {
             if crate::is_cancelled_error(&e) {
                 return Err(e);
             }
@@ -41,25 +46,18 @@ pub async fn process_content_items(
 
 async fn process_one_item(
     item: ContentItem,
-    post_title: &str,
-    folder_path: &Path,
-    href_prefix: &str,
-    signed_query: Option<&str>,
+    ctx: &ContentCtx<'_>,
     blocks: &mut Vec<Block>,
-    cancel_token: &CancellationToken,
 ) -> Result<()> {
-    crate::ensure_not_cancelled(cancel_token)?;
+    crate::ensure_not_cancelled(ctx.cancel_token)?;
     match item {
         ContentItem::Image { url, id } => {
             let image_name = format!("{id}.jpg");
             download_and_push(
-                folder_path,
+                ctx,
                 &url,
                 &image_name,
-                href_prefix,
-                post_title,
                 None,
-                cancel_token,
                 |rel| Block::Image {
                     rel,
                     alt: id.clone(),
@@ -79,13 +77,10 @@ async fn process_one_item(
         ContentItem::OkVideo { url, title, vid } => {
             let title_with_vid = format!("{title}({vid}).mp4");
             download_and_push(
-                folder_path,
+                ctx,
                 &url,
                 &title_with_vid,
-                href_prefix,
-                post_title,
                 None,
-                cancel_token,
                 |rel| Block::VideoFile { rel },
                 blocks,
             )
@@ -104,13 +99,10 @@ async fn process_one_item(
                 file_handler::audio_extension(file_type.as_deref()),
             );
             download_and_push(
-                folder_path,
+                ctx,
                 &url,
                 &file_name,
-                href_prefix,
-                post_title,
-                signed_query,
-                cancel_token,
+                ctx.signed_query,
                 |rel| Block::Audio { rel },
                 blocks,
             )
@@ -120,13 +112,10 @@ async fn process_one_item(
             let file_name = file_handler::media_file_name(&id, &title, None);
             let link_title = title.clone();
             download_and_push(
-                folder_path,
+                ctx,
                 &url,
                 &file_name,
-                href_prefix,
-                post_title,
-                signed_query,
-                cancel_token,
+                ctx.signed_query,
                 |rel| Block::FileLink {
                     rel,
                     title: link_title,
@@ -149,13 +138,10 @@ async fn process_one_item(
             let image_name = format!("{name}.png");
             let alt = name.clone();
             download_and_push(
-                folder_path,
+                ctx,
                 &small_url,
                 &image_name,
-                href_prefix,
-                post_title,
                 None,
-                cancel_token,
                 |rel| Block::Smile { rel, alt },
                 blocks,
             )
@@ -171,21 +157,16 @@ async fn process_one_item(
             for group in items {
                 let mut group_blocks = Vec::new();
                 for subitem in group {
-                    if let Err(e) = Box::pin(process_one_item(
-                        subitem,
-                        post_title,
-                        folder_path,
-                        href_prefix,
-                        signed_query,
-                        &mut group_blocks,
-                        cancel_token,
-                    ))
-                    .await
+                    if let Err(e) =
+                        Box::pin(process_one_item(subitem, ctx, &mut group_blocks)).await
                     {
                         if crate::is_cancelled_error(&e) {
                             return Err(e);
                         }
-                        log_error!("Error processing list item for post '{post_title}': {e:#}");
+                        log_error!(
+                            "Error processing list item for post '{}': {e:#}",
+                            ctx.post_title
+                        );
                     }
                 }
                 if !group_blocks.is_empty() {
@@ -206,27 +187,24 @@ async fn process_one_item(
 }
 
 async fn download_and_push(
-    folder_path: &Path,
+    ctx: &ContentCtx<'_>,
     url: &str,
     file_name: &str,
-    href_prefix: &str,
-    post_title: &str,
     signed_query: Option<&str>,
-    cancel_token: &CancellationToken,
     make_block: impl FnOnce(String) -> Block,
     blocks: &mut Vec<Block>,
 ) -> Result<()> {
     let (result, rel) = file_handler::download_media(
-        folder_path,
+        ctx.folder_path,
         url,
         file_name,
-        post_title,
+        ctx.post_title,
         signed_query,
-        cancel_token,
+        ctx.cancel_token,
     )
     .await?;
-    cli::show_download_result(result, file_name, post_title);
-    blocks.push(make_block(format!("{href_prefix}{rel}")));
+    cli::show_download_result(result, file_name, ctx.post_title);
+    blocks.push(make_block(format!("{}{rel}", ctx.href_prefix)));
     Ok(())
 }
 
