@@ -70,23 +70,60 @@ fn filter_item(item: ContentItem, enabled: &DownloadOptions) -> Option<ContentIt
 }
 
 fn is_enabled(item: &ContentItem, enabled: &DownloadOptions) -> bool {
-    let kind = match item {
-        ContentItem::Video { .. } | ContentItem::OkVideo { .. } => DownloadOption::Video,
+    match option_of(item) {
+        Some(kind) => enabled.contains(&kind),
+        None => matches!(item, ContentItem::List { .. }),
+    }
+}
 
-        ContentItem::Audio { .. } => DownloadOption::Audio,
-
-        ContentItem::Image { .. } => DownloadOption::Images,
-
+pub fn option_of(item: &ContentItem) -> Option<DownloadOption> {
+    match item {
+        ContentItem::Video { .. } | ContentItem::OkVideo { .. } => Some(DownloadOption::Video),
+        ContentItem::Audio { .. } => Some(DownloadOption::Audio),
+        ContentItem::Image { .. } => Some(DownloadOption::Images),
         ContentItem::Text { .. } | ContentItem::Link { .. } | ContentItem::Smile { .. } => {
-            DownloadOption::Texts
+            Some(DownloadOption::Texts)
         }
+        ContentItem::File { .. } => Some(DownloadOption::Files),
+        ContentItem::List { .. } | ContentItem::Unknown => None,
+    }
+}
 
-        ContentItem::File { .. } => DownloadOption::Files,
+pub fn options_in_items(items: &[ContentItem]) -> HashSet<DownloadOption> {
+    let mut out = HashSet::new();
+    collect_options(items, &mut out);
+    out
+}
 
-        ContentItem::List { .. } => return true,
+fn collect_options(items: &[ContentItem], out: &mut HashSet<DownloadOption>) {
+    for item in items {
+        match item {
+            ContentItem::List { items, .. } => {
+                for group in items {
+                    collect_options(group, out);
+                }
+            }
+            other => {
+                if let Some(opt) = option_of(other) {
+                    out.insert(opt);
+                }
+            }
+        }
+    }
+}
 
-        ContentItem::Unknown => return false,
-    };
+const OPTION_ORDER: [DownloadOption; 5] = [
+    DownloadOption::Video,
+    DownloadOption::Audio,
+    DownloadOption::Images,
+    DownloadOption::Texts,
+    DownloadOption::Files,
+];
 
-    enabled.contains(&kind)
+pub fn ordered_options(set: impl IntoIterator<Item = DownloadOption>) -> Vec<DownloadOption> {
+    let set: HashSet<_> = set.into_iter().collect();
+    OPTION_ORDER
+        .into_iter()
+        .filter(|o| set.contains(o))
+        .collect()
 }
