@@ -50,7 +50,7 @@ export function DownloadOptionsPanel({
   };
 
   return (
-    <div className="flex items-center justify-around rounded-lg py-2">
+    <div className="flex items-center justify-around rounded-lg py-1">
       {OPTIONS.map(({ key, label, icon: Icon }) => {
         const checked = value.includes(key);
 
@@ -62,8 +62,8 @@ export function DownloadOptionsPanel({
               onCheckedChange={() => toggle(key)}
             />
 
-            <Icon size={24} />
-            <HintIcon text={label} />
+            <Icon size={28} />
+            <HintIcon size={20} text={label} />
           </label>
         );
       })}

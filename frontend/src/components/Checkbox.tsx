@@ -6,7 +6,7 @@ export function Checkbox(
 ) {
   return (
     <CheckboxPrimitive.Root
-      className="peer size-5 shrink-0 cursor-pointer rounded border border-(--border) disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:border-(--accent) data-[state=checked]:bg-(--accent)"
+      className="peer size-6 shrink-0 cursor-pointer rounded border border-(--border) disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:border-(--accent) data-[state=checked]:bg-(--accent)"
       {...props}
     >
       <CheckboxPrimitive.Indicator className="flex items-center justify-center">
