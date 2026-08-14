@@ -1,44 +1,197 @@
 <!DOCTYPE html>
-<html>
+<html lang="ru">
 
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{TITLE}}</title>
     <style>
-        body {
-            max-width: 100%;
+        :root {
+            color-scheme: light dark;
+            --bg: #f6f4f0;
+            --surface: #fffdf9;
+            --text: #1c1917;
+            --muted: #78716c;
+            --border: #e7e5e4;
+            --accent: #b45309;
+            --link: #1d4ed8;
+            --shadow: 0 1px 2px rgba(28, 25, 23, 0.06);
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg: #1c1917;
+                --surface: #292524;
+                --text: #f5f5f4;
+                --muted: #a8a29e;
+                --border: #44403c;
+                --accent: #fbbf24;
+                --link: #93c5fd;
+                --shadow: none;
+            }
+        }
+
+        * {
             box-sizing: border-box;
-            background-color: #ababab;
+        }
+
+        body {
+            margin: 0;
+            background: var(--bg);
+            color: var(--text);
+            font: 18px/1.65 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+        }
+
+        .page {
+            max-width: 42rem;
+            margin: 0 auto;
+            padding: 2.5rem 1.25rem 4rem;
+        }
+
+        .post-header h1 {
+            margin: 0 0 0.5rem;
+            font-size: 2rem;
+            line-height: 1.25;
+            font-weight: 700;
+        }
+
+        .meta,
+        .comment-meta {
+            margin: 0;
+            color: var(--muted);
+            font-size: 0.95rem;
+        }
+
+        .sep {
+            margin: 0 0.4rem;
+        }
+
+        .tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.4rem;
+            list-style: none;
+            padding: 0;
+            margin: 1rem 0 0;
+        }
+
+        .tags li {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 999px;
+            padding: 0.15rem 0.7rem;
+            font-size: 0.85rem;
+            color: var(--muted);
+        }
+
+        .content {
+            margin-top: 1.75rem;
+        }
+
+        .content p {
+            margin: 0 0 1rem;
+        }
+
+        .content a {
+            color: var(--link);
+        }
+
+        .content ul,
+        .content ol {
+            margin: 0 0 1rem;
+            padding-left: 1.4rem;
+        }
+
+        .media {
+            margin: 0 0 1.25rem;
+        }
+
+        img.thumbnail,
+        img.smile,
+        video,
+        audio,
+        iframe {
+            max-width: 100%;
+        }
+
+        img.thumbnail {
+            display: block;
+            width: 100%;
+            height: auto;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            box-shadow: var(--shadow);
+        }
+
+        img.smile {
+            height: 1.25em;
+            width: auto;
+            vertical-align: -0.2em;
         }
 
         video,
         iframe {
-            max-width: 100%;
-            width: 640px;
-            height: 360px;
+            display: block;
+            width: 100%;
+            aspect-ratio: 16 / 9;
+            height: auto;
+            border: 0;
+            border-radius: 0.5rem;
+            background: #000;
+        }
+
+        .embed-fallback {
+            margin: 0.5rem 0 0;
+            font-size: 0.95rem;
         }
 
         audio {
-            max-width: 100%;
-            height: auto;
-            width: 640px;
+            width: 100%;
         }
 
-        img.thumbnail {
-            max-width: 100%;
-            width: 300px;
-            height: auto;
-            cursor: pointer;
+        .file a {
+            display: inline-block;
+            padding: 0.35rem 0.7rem;
+            border: 1px solid var(--border);
+            border-radius: 0.4rem;
+            background: var(--surface);
+            text-decoration: none;
+        }
+
+        .comments {
+            margin-top: 3rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--border);
+        }
+
+        .comments h2 {
+            margin: 0 0 1.25rem;
+            font-size: 1.25rem;
+        }
+
+        .comment {
+            margin: 0 0 1.25rem;
+            margin-left: calc(var(--level, 0) * 1.25rem);
+            padding: 0.9rem 1rem;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 0.6rem;
+        }
+
+        .comment-body {
+            margin-top: 0.5rem;
+        }
+
+        .comment-body p:last-child {
+            margin-bottom: 0;
         }
 
         .modal {
             display: none;
             position: fixed;
             z-index: 1;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.8);
+            inset: 0;
+            background: rgba(0, 0, 0, 0.8);
             justify-content: center;
             align-items: center;
         }
@@ -55,7 +208,12 @@
 </head>
 
 <body>
-    {content}
+    <article class="page">
+        {{HEADER}}
+        <div class="content">
+            {{CONTENT}}
+        </div>
+    </article>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const images = document.querySelectorAll('img.thumbnail');
