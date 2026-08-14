@@ -1,8 +1,8 @@
 use crate::{
-    DownloadOption, DownloadOptions, file_handler::DownloadResult, log_error, log_info, log_warn,
+    file_handler::DownloadResult, log_error, log_info, log_warn, DownloadOption, DownloadOptions,
 };
 use anyhow::Error;
-use dialoguer::{Input, MultiSelect, Select, theme::ColorfulTheme};
+use dialoguer::{theme::ColorfulTheme, Input, MultiSelect, Select};
 use std::{
     collections::{HashMap, HashSet},
     path::Path,

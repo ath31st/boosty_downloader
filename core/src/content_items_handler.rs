@@ -1,6 +1,8 @@
-use crate::{cli, file_handler, log_error, parser};
-use anyhow::{Context, Result};
+use crate::{cli, file_handler, log_error, parser, post_page};
+use anyhow::Result;
 use boosty_api::media_content::ContentItem;
+use parser::ParsedText;
+use post_page::Block;
 use std::path::Path;
 use tokio_util::sync::CancellationToken;
 
@@ -8,21 +10,21 @@ pub async fn process_content_items(
     items: Vec<ContentItem>,
     post_title: &str,
     folder_path: &Path,
+    href_prefix: &str,
     signed_query: Option<&str>,
     cancel_token: &CancellationToken,
-) -> Result<()> {
-    let rel_literal = "{rel}";
-    let mut stack = items.into_iter().rev().collect::<Vec<_>>();
+) -> Result<Vec<Block>> {
+    let mut blocks = Vec::new();
 
-    while let Some(item) = stack.pop() {
+    for item in items {
         crate::ensure_not_cancelled(cancel_token)?;
         if let Err(e) = process_one_item(
             item,
             post_title,
             folder_path,
+            href_prefix,
             signed_query,
-            rel_literal,
-            &mut stack,
+            &mut blocks,
             cancel_token,
         )
         .await
@@ -34,183 +36,167 @@ pub async fn process_content_items(
         }
     }
 
-    Ok(())
+    Ok(blocks)
 }
 
 async fn process_one_item(
     item: ContentItem,
     post_title: &str,
     folder_path: &Path,
+    href_prefix: &str,
     signed_query: Option<&str>,
-    rel_literal: &str,
-    stack: &mut Vec<ContentItem>,
+    blocks: &mut Vec<Block>,
     cancel_token: &CancellationToken,
 ) -> Result<()> {
     crate::ensure_not_cancelled(cancel_token)?;
     match item {
         ContentItem::Image { url, id } => {
             let image_name = format!("{id}.jpg");
-            let image_markdown =
-                format!("<img src=\"{rel_literal}\" alt=\"{id}\" class=\"thumbnail\">\n");
-
-            let download_res = file_handler::process_file_and_markdown(
+            download_and_push(
                 folder_path,
                 &url,
                 &image_name,
-                &image_markdown,
+                href_prefix,
                 post_title,
                 None,
                 cancel_token,
+                |rel| Block::Image {
+                    rel,
+                    alt: id.clone(),
+                },
+                blocks,
             )
             .await?;
-
-            cli::show_download_result(download_res, &id, post_title);
         }
         ContentItem::Video { url } => {
-            let embed_url = if url.contains("youtube.com/watch?v=") {
-                url.replace("youtube.com/watch?v=", "youtube.com/embed/")
-            } else if url.contains("youtu.be/") {
-                url.replace("youtu.be/", "youtube.com/embed/")
-            } else {
-                url.clone()
-            };
-
-            let video_markdown = format!(
-                "<iframe src=\"{embed_url}\" frameborder=\"0\" allowfullscreen></iframe>\n"
-            );
-
-            let download_res =
-                file_handler::download_text_content(
-                    folder_path,
-                    post_title,
-                    &video_markdown,
-                    None,
-                    cancel_token,
-                )
-                    .await
-                    .with_context(|| {
-                        format!("Failed to embed video url '{url}' for post '{post_title}'")
-                    })?;
-
-            cli::show_download_result(download_res, post_title, post_title);
+            let embed = parser::video_embed(&url);
+            blocks.push(Block::Embed {
+                iframe_src: embed.iframe_src,
+                watch_url: embed.watch_url,
+                watch_label: embed.watch_label,
+            });
         }
         ContentItem::OkVideo { url, title, vid } => {
             let title_with_vid = format!("{title}({vid}).mp4");
-            let video_markdown = format!(
-                "<video controls>\n  <source src=\"{rel_literal}\" type=\"video/mp4\">\n  Ваш браузер не поддерживает видео.\n</video>\n"
-            );
-
-            let download_res = file_handler::process_file_and_markdown(
+            download_and_push(
                 folder_path,
                 &url,
                 &title_with_vid,
-                &video_markdown,
+                href_prefix,
                 post_title,
                 None,
                 cancel_token,
+                |rel| Block::VideoFile { rel },
+                blocks,
             )
             .await?;
-
-            cli::show_download_result(download_res, &title_with_vid, post_title);
         }
-        ContentItem::Audio { url, title, .. } => {
-            let audio_markdown = format!(
-                "<audio controls>\n  <source src=\"{rel_literal}\" type=\"audio/mpeg\">\n  Ваш браузер не поддерживает аудио.\n</audio>\n"
+        ContentItem::Audio {
+            url,
+            title,
+            id,
+            file_type,
+            ..
+        } => {
+            let file_name = file_handler::media_file_name(
+                &id,
+                &title,
+                file_handler::audio_extension(file_type.as_deref()),
             );
-
-            let download_res = file_handler::process_file_and_markdown(
+            download_and_push(
                 folder_path,
                 &url,
-                &title,
-                &audio_markdown,
+                &file_name,
+                href_prefix,
                 post_title,
                 signed_query,
                 cancel_token,
+                |rel| Block::Audio { rel },
+                blocks,
             )
-            .await
-            .with_context(|| {
-                format!("Failed to process audio '{title}' for post '{post_title}'")
-            })?;
-
-            cli::show_download_result(download_res, &title, post_title);
+            .await?;
         }
-        ContentItem::File { url, title, .. } => {
-            let file_markdown = format!("<a href=\"{rel_literal}\" download>{title}</a>\n");
-
-            let download_res = file_handler::process_file_and_markdown(
+        ContentItem::File { url, title, id, .. } => {
+            let file_name = file_handler::media_file_name(&id, &title, None);
+            let link_title = title.clone();
+            download_and_push(
                 folder_path,
                 &url,
-                &title,
-                &file_markdown,
+                &file_name,
+                href_prefix,
                 post_title,
                 signed_query,
                 cancel_token,
+                |rel| Block::FileLink {
+                    rel,
+                    title: link_title,
+                },
+                blocks,
             )
-            .await
-            .with_context(|| format!("Failed to process file '{title}' for post '{post_title}'"))?;
-
-            cli::show_download_result(download_res, &title, post_title);
+            .await?;
         }
         ContentItem::Text {
             modificator,
             content,
-        } => {
-            if let Some(parsed) = parser::parse_text_content(&content, &modificator) {
-                let download_res = file_handler::download_text_content(
-                    folder_path,
-                    post_title,
-                    &parsed,
-                    Some(&modificator),
-                    cancel_token,
-                )
-                .await
-                .with_context(|| {
-                    format!("Failed to download text '{content}' for post '{post_title}'")
-                })?;
-                cli::show_download_result(download_res, post_title, post_title);
-            }
-        }
+        } => match parser::parse_text_content(&content, &modificator) {
+            Some(ParsedText::ParagraphBreak) => blocks.push(Block::ParagraphBreak),
+            Some(ParsedText::Span { text, style }) => blocks.push(Block::Text { text, style }),
+            None => {}
+        },
         ContentItem::Smile {
             small_url, name, ..
         } => {
             let image_name = format!("{name}.png");
-            let smile_content = format!("![{name}]({rel_literal})\n");
-
-            let download_res = file_handler::process_file_and_markdown(
+            let alt = name.clone();
+            download_and_push(
                 folder_path,
                 &small_url,
                 &image_name,
-                &smile_content,
+                href_prefix,
                 post_title,
                 None,
                 cancel_token,
+                |rel| Block::Smile { rel, alt },
+                blocks,
             )
             .await?;
-
-            cli::show_download_result(download_res, &name, post_title);
         }
         ContentItem::Link { content, url, .. } => {
-            if let Some(parsed) = parser::parse_link_content(&content, &url) {
-                let download_res =
-                    file_handler::download_text_content(
-                        folder_path,
-                        post_title,
-                        &parsed,
-                        None,
-                        cancel_token,
-                    )
-                        .await
-                        .with_context(|| {
-                            format!("Failed to download link '{url}' for post '{post_title}'")
-                        })?;
-                cli::show_download_result(download_res, post_title, post_title);
+            if let Some((text, href)) = parser::parse_link_content(&content, &url) {
+                blocks.push(Block::Link { text, url: href });
             }
         }
-        ContentItem::List { items, .. } => {
-            for sublist in items {
-                for subitem in sublist {
-                    stack.insert(0, subitem);
+        ContentItem::List { style, items } => {
+            let mut list_items = Vec::new();
+            for group in items {
+                let mut group_blocks = Vec::new();
+                for subitem in group {
+                    if let Err(e) = Box::pin(process_one_item(
+                        subitem,
+                        post_title,
+                        folder_path,
+                        href_prefix,
+                        signed_query,
+                        &mut group_blocks,
+                        cancel_token,
+                    ))
+                    .await
+                    {
+                        if crate::is_cancelled_error(&e) {
+                            return Err(e);
+                        }
+                        log_error!("Error processing list item for post '{post_title}': {e:#}");
+                    }
                 }
+                if !group_blocks.is_empty() {
+                    list_items.push(group_blocks);
+                }
+            }
+            if !list_items.is_empty() {
+                blocks.push(Block::List {
+                    ordered: is_ordered_list(&style),
+                    items: list_items,
+                });
             }
         }
         ContentItem::Unknown => cli::unknown_content_item(),
@@ -219,4 +205,49 @@ async fn process_one_item(
     Ok(())
 }
 
+async fn download_and_push(
+    folder_path: &Path,
+    url: &str,
+    file_name: &str,
+    href_prefix: &str,
+    post_title: &str,
+    signed_query: Option<&str>,
+    cancel_token: &CancellationToken,
+    make_block: impl FnOnce(String) -> Block,
+    blocks: &mut Vec<Block>,
+) -> Result<()> {
+    let (result, rel) = file_handler::download_media(
+        folder_path,
+        url,
+        file_name,
+        post_title,
+        signed_query,
+        cancel_token,
+    )
+    .await?;
+    cli::show_download_result(result, file_name, post_title);
+    blocks.push(make_block(format!("{href_prefix}{rel}")));
+    Ok(())
+}
 
+fn is_ordered_list(style: &str) -> bool {
+    let s = style.to_ascii_lowercase();
+    if s.contains("unorder") || s == "ul" || s.contains("bullet") {
+        false
+    } else {
+        s.contains("order") || s.contains("decimal") || s == "ol" || s.contains("number")
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn unordered_is_not_ordered() {
+        assert!(!is_ordered_list("unordered"));
+        assert!(!is_ordered_list("ul"));
+        assert!(is_ordered_list("ordered"));
+        assert!(is_ordered_list("decimal"));
+    }
+}

@@ -1,11 +1,12 @@
 use crate::{
     DownloadOptions, cli, content_items_handler, download_options, file_handler, log_error,
-    progress_reporter,
+    post_page, progress_reporter,
 };
-use anyhow::{Context, Result};
+use anyhow::Result;
 use boosty_api::model::Post;
 use boosty_api::traits::{HasContent, HasTitle, IsAvailable};
-use std::path::{Path, PathBuf};
+use post_page::PostPage;
+use std::path::Path;
 use tokio_util::sync::CancellationToken;
 
 pub enum PostsResult {
@@ -41,14 +42,30 @@ pub async fn process_posts(
     download_path: &Path,
     download_options: DownloadOptions,
     cancel_token: &CancellationToken,
-) -> Result<()> {
+) -> Result<Vec<PostPage>> {
+    let mut pages = Vec::new();
     match result {
         PostsResult::Multiple(posts) => {
             for post in posts {
                 crate::ensure_not_cancelled(cancel_token)?;
-                if let Err(e) =
-                    process(&post, download_path, download_options.clone(), cancel_token).await
-                {
+                match process(&post, download_path, download_options.clone(), cancel_token).await {
+                    Ok(Some(page)) => pages.push(page),
+                    Ok(None) => {}
+                    Err(e) => {
+                        if crate::is_cancelled_error(&e) {
+                            return Err(e);
+                        }
+                        log_error!("Error processing post '{}': {:#}", post.safe_title(), e);
+                    }
+                }
+            }
+        }
+        PostsResult::Single(post) => {
+            crate::ensure_not_cancelled(cancel_token)?;
+            match process(&post, download_path, download_options, cancel_token).await {
+                Ok(Some(page)) => pages.push(page),
+                Ok(None) => {}
+                Err(e) => {
                     if crate::is_cancelled_error(&e) {
                         return Err(e);
                     }
@@ -56,17 +73,8 @@ pub async fn process_posts(
                 }
             }
         }
-        PostsResult::Single(post) => {
-            crate::ensure_not_cancelled(cancel_token)?;
-            if let Err(e) = process(&post, download_path, download_options, cancel_token).await {
-                if crate::is_cancelled_error(&e) {
-                    return Err(e);
-                }
-                log_error!("Error processing post '{}': {:#}", post.safe_title(), e);
-            }
-        }
     }
-    Ok(())
+    Ok(pages)
 }
 
 async fn process(
@@ -74,40 +82,52 @@ async fn process(
     download_path: &Path,
     download_options: DownloadOptions,
     cancel_token: &CancellationToken,
-) -> Result<()> {
+) -> Result<Option<PostPage>> {
     crate::ensure_not_cancelled(cancel_token)?;
     if !check_available_post(post) {
-        return Ok(());
+        return Ok(None);
     }
 
-    let post_title = &post.safe_title();
+    let post_title = post.safe_title();
     let blog_name = &post.user.blog_url;
 
-    let post_folder_path: PathBuf =
-        file_handler::prepare_folder_path(blog_name, post_title, post.created_at, download_path)
-            .await?;
+    let post_folder_path = file_handler::prepare_folder_path(
+        blog_name,
+        &post_title,
+        post.created_at,
+        &post.id,
+        download_path,
+    )
+    .await?;
 
     let items = post.extract_content();
     let filtered_items = download_options::filter_content_items(items, &download_options);
 
-    content_items_handler::process_content_items(
+    let body = content_items_handler::process_content_items(
         filtered_items,
-        post_title,
+        &post_title,
         &post_folder_path,
+        "",
         Some(&post.signed_query),
         cancel_token,
     )
     .await?;
 
-    file_handler::normalize_md_file(&post_folder_path, post_title)
-        .await
-        .with_context(|| format!("Failed to normalize '{post_title}.md'"))?;
+    let page = PostPage {
+        folder: post_folder_path,
+        post_id: post.id.clone(),
+        title: post_title,
+        created_at: post.created_at,
+        author: post.user.name.clone(),
+        blog: post.user.blog_url.clone(),
+        tags: post.tags.iter().map(|t| t.title.clone()).collect(),
+        body,
+        comments: Vec::new(),
+    };
 
-    file_handler::convert_markdown_file_to_html(&post_folder_path, post_title)
-        .await
-        .with_context(|| format!("Failed to convert '{post_title}.md' to HTML"))?;
+    post_page::write_post_page(&page).await?;
 
-    Ok(())
+    Ok(Some(page))
 }
 
 fn check_available_post(post: &Post) -> bool {

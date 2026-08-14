@@ -35,16 +35,15 @@ pub async fn handle_menu(client: &ApiClient) -> Result<bool> {
 
                 let ctx = url_context::build_url_context(&input, offset_opt)?;
 
-                if let Err(e) =
-                    process_boosty_url(
-                        client,
-                        &cfg,
-                        &ctx.url,
-                        ctx.offset,
-                        download_options,
-                        &CancellationToken::new(),
-                    )
-                    .await
+                if let Err(e) = process_boosty_url(
+                    client,
+                    &cfg,
+                    &ctx.url,
+                    ctx.offset,
+                    download_options,
+                    &CancellationToken::new(),
+                )
+                .await
                 {
                     log_error!("{:#}", e);
                 };
@@ -183,7 +182,7 @@ pub async fn process_boosty_url(
     };
 
     // Collect metadata for comments before posts are consumed by process_posts.
-    let comment_targets: Vec<(String, String, String, i64)> = if cfg.comments.enabled {
+    let comment_targets: Vec<(String, String, String)> = if cfg.comments.enabled {
         match &result {
             post_handler::PostsResult::Single(post) => {
                 if post.not_available() {
@@ -193,21 +192,13 @@ pub async fn process_boosty_url(
                         post.user.blog_url.clone(),
                         post.id.clone(),
                         post.safe_title(),
-                        post.created_at,
                     )]
                 }
             }
             post_handler::PostsResult::Multiple(posts) => posts
                 .iter()
                 .filter(|p| !p.not_available())
-                .map(|p| {
-                    (
-                        p.user.blog_url.clone(),
-                        p.id.clone(),
-                        p.safe_title(),
-                        p.created_at,
-                    )
-                })
+                .map(|p| (p.user.blog_url.clone(), p.id.clone(), p.safe_title()))
                 .collect(),
         }
     } else {
@@ -218,22 +209,27 @@ pub async fn process_boosty_url(
     let post_files = post_handler::count_downloadable_files(&result, &download_options);
     let _progress = progress_reporter::SessionGuard::new(post_files);
 
-    post_handler::process_posts(result, download_path, download_options.clone(), cancel_token)
-        .await
-        .with_context(|| {
-            format!(
-                "Error while processing post content: {}",
-                match &url {
-                    BoostyUrl::Blog(blog) => blog,
-                    BoostyUrl::Post { blog, .. } => blog,
-                }
-            )
-        })?;
+    let mut pages = post_handler::process_posts(
+        result,
+        download_path,
+        download_options.clone(),
+        cancel_token,
+    )
+    .await
+    .with_context(|| {
+        format!(
+            "Error while processing post content: {}",
+            match &url {
+                BoostyUrl::Blog(blog) => blog,
+                BoostyUrl::Post { blog, .. } => blog,
+            }
+        )
+    })?;
 
     if !comment_targets.is_empty() {
         let mut comments_results = Vec::new();
 
-        for (blog_url, post_id, safe_post_title, created_at) in comment_targets {
+        for (blog_url, post_id, safe_post_title) in comment_targets {
             crate::ensure_not_cancelled(cancel_token)?;
             match client
                 .get_all_comments(
@@ -248,9 +244,8 @@ pub async fn process_boosty_url(
                 Ok(comments) => {
                     comments_results.push(comment_handler::CommentsResult {
                         comments,
+                        post_id,
                         safe_post_title,
-                        created_at,
-                        blog_url,
                     });
                 }
                 Err(e) => {
@@ -261,7 +256,7 @@ pub async fn process_boosty_url(
 
         if let Err(e) = comment_handler::process_comments(
             comments_results,
-            download_path,
+            &mut pages,
             download_options,
             cancel_token,
         )
@@ -293,16 +288,15 @@ async fn process_batch_file(
 
         match url_context::build_url_context(&link, None) {
             Ok(ctx) => {
-                if let Err(e) =
-                    process_boosty_url(
-                        client,
-                        cfg,
-                        &ctx.url,
-                        ctx.offset,
-                        download_options.clone(),
-                        &CancellationToken::new(),
-                    )
-                    .await
+                if let Err(e) = process_boosty_url(
+                    client,
+                    cfg,
+                    &ctx.url,
+                    ctx.offset,
+                    download_options.clone(),
+                    &CancellationToken::new(),
+                )
+                .await
                 {
                     log_error!("Error processing link '{}': {e}", link);
                 }

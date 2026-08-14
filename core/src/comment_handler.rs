@@ -1,4 +1,4 @@
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 use anyhow::{Context, Result};
 use boosty_api::{
@@ -6,24 +6,23 @@ use boosty_api::{
     model::Comment,
     traits::{HasContent, IsAvailable},
 };
-use chrono::{DateTime, Utc};
 use tokio_util::sync::CancellationToken;
 
 use crate::{
     DownloadOptions, cli, content_items_handler, download_options, file_handler, log_error,
-    progress_reporter,
+    post_page, progress_reporter,
 };
+use post_page::{CommentView, PostPage};
 
 pub struct CommentsResult {
     pub comments: Vec<Comment>,
-    pub blog_url: String,
+    pub post_id: String,
     pub safe_post_title: String,
-    pub created_at: i64,
 }
 
 pub async fn process_comments(
     results: Vec<CommentsResult>,
-    download_path: &Path,
+    pages: &mut [PostPage],
     download_options: DownloadOptions,
     cancel_token: &CancellationToken,
 ) -> Result<()> {
@@ -36,17 +35,15 @@ pub async fn process_comments(
 
     for result in results {
         crate::ensure_not_cancelled(cancel_token)?;
-        let post_title = &result.safe_post_title;
+        let Some(page) = pages.iter_mut().find(|p| p.post_id == result.post_id) else {
+            log_error!(
+                "No downloaded post page for comments of '{}'",
+                result.safe_post_title
+            );
+            continue;
+        };
 
-        if let Err(e) = process_one(
-            &result,
-            post_title,
-            download_path,
-            download_options.clone(),
-            cancel_token,
-        )
-        .await
-        {
+        if let Err(e) = process_one(page, &result, download_options.clone(), cancel_token).await {
             if crate::is_cancelled_error(&e) {
                 return Err(e);
             }
@@ -61,54 +58,30 @@ pub async fn process_comments(
 }
 
 async fn process_one(
+    page: &mut PostPage,
     result: &CommentsResult,
-    post_title: &str,
-    download_path: &Path,
     download_options: DownloadOptions,
     cancel_token: &CancellationToken,
 ) -> Result<()> {
     crate::ensure_not_cancelled(cancel_token)?;
-    let post_folder_path: PathBuf = file_handler::prepare_folder_path(
-        &result.blog_url,
-        post_title,
-        result.created_at,
-        download_path,
-    )
-    .await?;
 
-    let comments_folder_path: PathBuf =
-        file_handler::prepare_folder_path_for_comments(&post_folder_path).await?;
-
-    process(
-        result,
-        &comments_folder_path,
-        post_title,
-        download_options,
-        cancel_token,
-    )
-    .await
-    .with_context(|| {
-        format!(
-            "Error processing comments for post '{}'",
-            result.safe_post_title
-        )
-    })?;
-
-    file_handler::normalize_md_file(&comments_folder_path, post_title)
+    process(page, result, download_options, cancel_token)
         .await
-        .with_context(|| format!("Failed to normalize '{post_title}.md' for comments"))?;
+        .with_context(|| {
+            format!(
+                "Error processing comments for post '{}'",
+                result.safe_post_title
+            )
+        })?;
 
-    file_handler::convert_markdown_file_to_html(&comments_folder_path, post_title)
-        .await
-        .with_context(|| format!("Failed to convert '{post_title}.md' to HTML"))?;
+    post_page::write_post_page(page).await?;
 
     Ok(())
 }
 
 async fn process(
+    page: &mut PostPage,
     cr: &CommentsResult,
-    comments_folder_path: &Path,
-    post_title: &str,
     download_options: DownloadOptions,
     cancel_token: &CancellationToken,
 ) -> Result<()> {
@@ -117,62 +90,72 @@ async fn process(
         return Ok(());
     }
 
-    let items: Vec<ContentItem> = cr
-        .comments
-        .iter()
-        .filter(|c| !c.not_available())
-        .flat_map(|c| collect_items_from_comment(c, 0))
-        .collect();
+    let comments_folder_path = file_handler::prepare_folder_path_for_comments(&page.folder).await?;
 
-    let filtered_items = download_options::filter_content_items(items, &download_options);
+    let mut comments = Vec::new();
+    for comment in cr.comments.iter().filter(|c| !c.not_available()) {
+        collect_comment_views(
+            comment,
+            0,
+            &page.title,
+            &comments_folder_path,
+            &download_options,
+            cancel_token,
+            &mut comments,
+        )
+        .await?;
+    }
 
-    content_items_handler::process_content_items(
-        filtered_items,
+    page.comments = comments;
+    Ok(())
+}
+
+async fn collect_comment_views(
+    comment: &Comment,
+    level: u8,
+    post_title: &str,
+    comments_folder_path: &Path,
+    download_options: &DownloadOptions,
+    cancel_token: &CancellationToken,
+    out: &mut Vec<CommentView>,
+) -> Result<()> {
+    crate::ensure_not_cancelled(cancel_token)?;
+
+    let items = comment.extract_content();
+    let filtered = download_options::filter_content_items(items, download_options);
+    let blocks = content_items_handler::process_content_items(
+        filtered,
         post_title,
         comments_folder_path,
+        "comments/",
         None,
         cancel_token,
     )
     .await?;
 
-    Ok(())
-}
-
-fn modify_text_content(items: &mut Vec<ContentItem>, author: &str, created_at: u64, level: u8) {
-    let indent = "↳".repeat(level.into());
-    for item in items {
-        match item {
-            ContentItem::Text {
-                content,
-                modificator,
-            } if modificator != "BLOCK_END"
-                && !content.is_empty()
-                && content.starts_with("[\"") =>
-            {
-                let datetime: DateTime<Utc> =
-                    DateTime::from_timestamp(created_at as i64, 0).unwrap_or_default();
-
-                let date_str = datetime.format("%Y.%m.%d %H:%M").to_string();
-                let insert_pos = 2;
-                content.insert_str(insert_pos, &format!("{indent}[{date_str}][{author}] "));
-            }
-            _ => {}
-        }
-    }
-}
-
-fn collect_items_from_comment(comment: &Comment, level: u8) -> Vec<ContentItem> {
-    let mut items = comment.extract_content();
-    modify_text_content(&mut items, &comment.author.name, comment.created_at, level);
+    out.push(CommentView {
+        author: comment.author.name.clone(),
+        created_at: comment.created_at as i64,
+        level,
+        blocks,
+    });
 
     if let Some(replies) = &comment.replies {
-        for reply_group in replies.data.iter() {
-            let reply_items = collect_items_from_comment(reply_group, level + 1);
-            items.extend(reply_items);
+        for reply in replies.data.iter().filter(|c| !c.not_available()) {
+            Box::pin(collect_comment_views(
+                reply,
+                level.saturating_add(1),
+                post_title,
+                comments_folder_path,
+                download_options,
+                cancel_token,
+                out,
+            ))
+            .await?;
         }
     }
 
-    items
+    Ok(())
 }
 
 fn check_available_comments(comments: &[Comment], post_title: &str) -> bool {

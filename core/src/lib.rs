@@ -11,6 +11,7 @@ pub(crate) mod logger;
 pub(crate) mod menu_handler;
 pub(crate) mod parser;
 pub(crate) mod post_handler;
+pub(crate) mod post_page;
 pub(crate) mod progress_reporter;
 pub(crate) mod url_context;
 
