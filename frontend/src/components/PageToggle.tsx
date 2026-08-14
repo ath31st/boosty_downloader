@@ -1,6 +1,6 @@
 import type { Page } from '@/constants/pages';
 import { Button } from './Button';
-import { CogIcon, House } from 'lucide-react';
+import { CogIcon, List, House } from 'lucide-react';
 
 interface PageToggleProps {
   currentPage: Page;
@@ -8,21 +8,30 @@ interface PageToggleProps {
   isDownloading: boolean;
 }
 
+const ITEMS: { page: Page; icon: typeof House; label: string }[] = [
+  { page: 'main', icon: House, label: 'Загрузка' },
+  { page: 'downloaded', icon: List, label: 'Скачанное' },
+  { page: 'config', icon: CogIcon, label: 'Настройки' },
+];
+
 export function PageToggle({
   setCurrentPage,
   isDownloading,
   currentPage,
 }: PageToggleProps) {
-  const nextPage = currentPage === 'main' ? 'config' : 'main';
-  const icon = currentPage === 'main' ? <CogIcon /> : <House />;
-
   return (
-    <Button
-      className="w-full"
-      disabled={isDownloading}
-      onClick={() => setCurrentPage(nextPage)}
-    >
-      {icon}
-    </Button>
+    <div className="flex gap-2">
+      {ITEMS.map(({ page, icon: Icon, label }) => (
+        <Button
+          key={page}
+          className="px-2"
+          disabled={isDownloading || currentPage === page}
+          onClick={() => setCurrentPage(page)}
+        >
+          <span className="sr-only">{label}</span>
+          <Icon aria-hidden />
+        </Button>
+      ))}
+    </div>
   );
 }

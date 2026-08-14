@@ -7,43 +7,43 @@ import { Input } from '@/components/Input';
 import { useDownloadProcess } from '@/hooks/useDownloadProcess';
 import { HintIcon } from '@/components/HintIcon';
 import { DownloadOptionsPanel } from '@/components/DownloadOptionsPanel';
+import type { DownloadSession } from '@/hooks/useDownloadingContent';
 
 interface MainPageProps {
-  isDownloading: boolean;
-  setDownloading: (value: boolean) => void;
+  session: DownloadSession;
 }
 
-export default function MainPage({
-  isDownloading,
-  setDownloading,
-}: MainPageProps) {
+export default function MainPage({ session }: MainPageProps) {
+  const {
+    isDownloading,
+    downloadOptions,
+    setDownloadOptions,
+    logs,
+    progress,
+    logsEndRef,
+  } = session;
   const {
     url,
     offsetUrl,
     setUrl,
     setOffsetUrl,
-    logs,
-    progress,
     startDownload,
     cancelDownload,
-    logsEndRef,
     isOffsetUrlDisabled,
     isDifferentBlogs,
-    downloadOptions,
-    setDownloadOptions,
     urlError,
-  } = useDownloadProcess(setDownloading);
+  } = useDownloadProcess(session);
 
   return (
-    <div className="flex flex-col gap-4 rounded-lg border border-(--border) bg-(--background) p-4 text-(--text)">
-      <div className="flex flex-1 flex-col gap-2">
+    <div className="flex min-h-0 flex-1 flex-col gap-4 rounded-lg border border-(--border) bg-(--background) p-4 text-(--text)">
+      <div className="flex shrink-0 flex-col gap-2">
         <DownloadOptionsPanel
           value={downloadOptions}
           onChange={setDownloadOptions}
           disabled={isDownloading}
         />
 
-        <div className="flex flex-1 flex-row gap-4">
+        <div className="flex flex-row gap-4">
           <Input
             placeholder="URL адрес блога или конкретного поста"
             value={url}
@@ -58,14 +58,16 @@ export default function MainPage({
           ) : (
             <Button
               onClick={startDownload}
-              disabled={!url || isDifferentBlogs || downloadOptions.length === 0}
+              disabled={
+                !url || isDifferentBlogs || downloadOptions.length === 0
+              }
             >
               <DownloadIcon />
             </Button>
           )}
         </div>
         {urlError && <p className="text-(--error) text-sm">{urlError}</p>}
-        <div className="relative flex flex-1 flex-row gap-4">
+        <div className="relative flex flex-row gap-4">
           <Input
             placeholder="URL адрес поста для отступа"
             value={offsetUrl}
@@ -93,7 +95,7 @@ export default function MainPage({
         </div>
       </div>
 
-      <div className="h-65 overflow-y-auto rounded-lg border border-(--border) bg-(--secondary-bg) p-2">
+      <div className="min-h-0 flex-1 overflow-y-auto rounded-lg border border-(--border) bg-(--secondary-bg) p-2">
         {logs.map((msg, index) => (
           <p
             // biome-ignore lint/suspicious/noArrayIndexKey: normal index
@@ -106,14 +108,16 @@ export default function MainPage({
         <div ref={logsEndRef} />
       </div>
 
-      <DownloadProgress
-        filesDone={progress.files_done}
-        filesTotal={progress.files_total}
-        fileName={progress.file_name}
-        current={progress.current}
-        total={progress.total}
-        isDownloading={isDownloading}
-      />
+      <div className="shrink-0">
+        <DownloadProgress
+          filesDone={progress.files_done}
+          filesTotal={progress.files_total}
+          fileName={progress.file_name}
+          current={progress.current}
+          total={progress.total}
+          isDownloading={isDownloading}
+        />
+      </div>
     </div>
   );
 }

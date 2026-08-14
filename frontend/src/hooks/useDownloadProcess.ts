@@ -1,15 +1,20 @@
-import { useState, useRef, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { invoke } from '@tauri-apps/api/core';
-import { listen } from '@tauri-apps/api/event';
 import { toast } from 'sonner';
-import type { LogMessage } from '@/types/logMessage';
-import type { ProgressMessage } from '@/types/progressMessage';
 import { useUrlValidation } from '@/hooks/useUrlValidation';
 import { isBlogUrl } from '@/utils/isBlogUrl';
 import { isSameBlogUrl } from '@/utils/isSameBlogUrl';
-import type { DownloadOptions } from '@/types/downloadOptions';
+import type { DownloadSession } from '@/hooks/useDownloadingContent';
 
-export function useDownloadProcess(setDownloading: (v: boolean) => void) {
+export function useDownloadProcess(session: DownloadSession) {
+  const {
+    setDownloading,
+    downloadOptions,
+    resetDownloadUi,
+    resetProgress,
+    cancelDownload,
+  } = session;
+
   const [url, setUrl] = useState(() => {
     if (typeof window === 'undefined') return '';
     return sessionStorage.getItem('url') ?? '';
@@ -20,23 +25,7 @@ export function useDownloadProcess(setDownloading: (v: boolean) => void) {
     return sessionStorage.getItem('offsetUrl') ?? '';
   });
 
-  const [logs, setLogs] = useState<LogMessage[]>([]);
-  const [progress, setProgress] = useState({
-    files_done: 0,
-    files_total: 0,
-    file_name: null as string | null,
-    current: 0,
-    total: 0,
-  });
   const { urlError, validateUrl } = useUrlValidation();
-  const logsEndRef = useRef<HTMLDivElement>(null);
-  const [downloadOptions, setDownloadOptions] = useState<DownloadOptions>([
-    'Video',
-    'Audio',
-    'Images',
-    'Texts',
-    'Files',
-  ]);
 
   useEffect(() => {
     if (url) sessionStorage.setItem('url', url);
@@ -48,25 +37,6 @@ export function useDownloadProcess(setDownloading: (v: boolean) => void) {
     else sessionStorage.removeItem('offsetUrl');
   }, [offsetUrl]);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: crying linter with red text
-  useEffect(() => {
-    logsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [logs]);
-
-  useEffect(() => {
-    const unlistenLog = listen('log', (event) => {
-      setLogs((prev) => [...prev, event.payload as LogMessage]);
-    });
-    const unlistenProgress = listen('progress', (event) => {
-      setProgress(event.payload as ProgressMessage);
-    });
-
-    return () => {
-      unlistenLog.then((f) => f());
-      unlistenProgress.then((f) => f());
-    };
-  }, []);
-
   const startDownload = async () => {
     if (!url) return;
     if (!validateUrl(url)) {
@@ -74,14 +44,7 @@ export function useDownloadProcess(setDownloading: (v: boolean) => void) {
       return;
     }
 
-    setLogs([]);
-    setProgress({
-      files_done: 0,
-      files_total: 0,
-      file_name: null,
-      current: 0,
-      total: 0,
-    });
+    resetDownloadUi();
     setDownloading(true);
 
     try {
@@ -100,22 +63,7 @@ export function useDownloadProcess(setDownloading: (v: boolean) => void) {
       }
     } finally {
       setDownloading(false);
-      setProgress({
-        files_done: 0,
-        files_total: 0,
-        file_name: null,
-        current: 0,
-        total: 0,
-      });
-    }
-  };
-
-  const cancelDownload = async () => {
-    try {
-      await invoke('cancel_download');
-    } catch (e) {
-      console.error(e);
-      toast.error('Не удалось отменить загрузку');
+      resetProgress();
     }
   };
 
@@ -140,14 +88,9 @@ export function useDownloadProcess(setDownloading: (v: boolean) => void) {
     setUrl,
     setOffsetUrl,
     urlError,
-    logs,
-    progress,
     startDownload,
     cancelDownload,
-    logsEndRef,
     isOffsetUrlDisabled,
     isDifferentBlogs,
-    downloadOptions,
-    setDownloadOptions,
   };
 }
