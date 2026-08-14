@@ -3,6 +3,7 @@ use crate::cli;
 use crate::comment_handler;
 use crate::config;
 use crate::config::AppConfig;
+use crate::downloaded;
 use crate::file_handler;
 use crate::log_error;
 use crate::log_info;
@@ -61,6 +62,11 @@ pub async fn handle_menu(client: &ApiClient) -> Result<bool> {
             }
         }
         2 => {
+            if let Err(e) = handle_downloaded_menu(client).await {
+                log_error!("{:#}", e);
+            }
+        }
+        3 => {
             if let Some(entered_token) = cli::read_access_token() {
                 client.set_bearer_token(&entered_token).await?;
                 config::update_config(|cfg| {
@@ -72,7 +78,7 @@ pub async fn handle_menu(client: &ApiClient) -> Result<bool> {
                 .with_context(|| "Failed to update config")?;
             }
         }
-        3 => {
+        4 => {
             if let Some((entered_token, entered_device_id)) = cli::read_refresh_and_client_id() {
                 client
                     .set_refresh_token_and_device_id(&entered_token, &entered_device_id)
@@ -90,7 +96,7 @@ pub async fn handle_menu(client: &ApiClient) -> Result<bool> {
                 .with_context(|| "Failed to update config")?;
             }
         }
-        4 => {
+        5 => {
             let mut cfg = config::load_config().await?;
             config::clear_auth(client, &mut cfg).await?;
             config::save_config(&cfg)
@@ -98,7 +104,7 @@ pub async fn handle_menu(client: &ApiClient) -> Result<bool> {
                 .with_context(|| "Failed to clear tokens")?;
             cli::tokens_and_client_id_cleared();
         }
-        5 => {
+        6 => {
             let cfg = config::load_config().await?;
 
             if let Some(limit) = cli::read_posts_limit(cfg.posts_limit) {
@@ -107,7 +113,7 @@ pub async fn handle_menu(client: &ApiClient) -> Result<bool> {
                     .with_context(|| "Failed to update posts limit")?;
             }
         }
-        6 => {
+        7 => {
             let cfg = config::load_config().await?;
 
             if let Some(new_path_opt) = cli::read_download_path(cfg.download_path.as_deref()) {
@@ -116,7 +122,7 @@ pub async fn handle_menu(client: &ApiClient) -> Result<bool> {
                     .with_context(|| "Failed to update download path")?;
             }
         }
-        7 => {
+        8 => {
             let cfg = config::load_config().await?;
 
             if let Some(enable_comments) = cli::read_comments_status(cfg.comments.enabled) {
@@ -134,9 +140,9 @@ pub async fn handle_menu(client: &ApiClient) -> Result<bool> {
                 cli::comments_toggled(status);
             }
         }
-        8 => cli::show_api_client_headers(&client.headers_as_map()),
-        9 => cli::show_config(&config::load_config().await?),
-        10 => {
+        9 => cli::show_api_client_headers(&client.headers_as_map()),
+        10 => cli::show_config(&config::load_config().await?),
+        11 => {
             cli::exit_message();
             return Ok(false);
         }
@@ -152,7 +158,7 @@ pub async fn process_boosty_url(
     offset_url: Option<BoostyUrl>,
     download_options: DownloadOptions,
     cancel_token: &CancellationToken,
-) -> Result<()> {
+) -> Result<usize> {
     crate::ensure_not_cancelled(cancel_token)?;
     let offset: Option<String> = match offset_url {
         Some(BoostyUrl::Post { blog, post_id }) => {
@@ -269,7 +275,7 @@ pub async fn process_boosty_url(
         }
     }
 
-    Ok(())
+    Ok(pages.len())
 }
 
 async fn process_batch_file(
@@ -308,5 +314,177 @@ async fn process_batch_file(
     }
 
     log_info!("Batch processing finished.");
+    Ok(())
+}
+
+async fn handle_downloaded_menu(client: &ApiClient) -> Result<()> {
+    let cfg = config::load_config().await?;
+    let download_path = config::get_download_path(&cfg);
+    let blogs = downloaded::scan(&download_path).await?;
+    if blogs.is_empty() {
+        cli::info("No downloaded blogs yet. Download a blog or post first.");
+        return Ok(());
+    }
+    let names: Vec<String> = blogs.iter().map(|b| b.blog.clone()).collect();
+    let Some(blog) = cli::select_blog_name(&names) else {
+        return Ok(());
+    };
+    handle_downloaded_blog(client, &cfg, &blog).await
+}
+
+async fn handle_downloaded_blog(client: &ApiClient, cfg: &AppConfig, blog: &str) -> Result<()> {
+    let download_path = config::get_download_path(cfg);
+    let mut snapshot = downloaded::scan(&download_path)
+        .await?
+        .into_iter()
+        .find(|b| b.blog == blog);
+
+    loop {
+        match cli::read_downloaded_blog_action() {
+            0 => match downloaded::refresh_blog(client, cfg, blog, &CancellationToken::new()).await
+            {
+                Ok(updated) => {
+                    cli::print_downloaded_posts(&updated.posts);
+                    snapshot = Some(updated);
+                }
+                Err(e) => log_error!("{:#}", e),
+            },
+            1 => {
+                if let Some(current) = &snapshot {
+                    cli::print_downloaded_posts(&current.posts);
+                } else {
+                    cli::info("No posts loaded. Check the blog first for remote statuses.");
+                }
+            }
+            2 => {
+                let Some(current) = snapshot.as_ref() else {
+                    cli::info("Check the blog first.");
+                    continue;
+                };
+                let ids: Vec<String> = current
+                    .posts
+                    .iter()
+                    .filter(|p| p.status == downloaded::PostSyncStatus::New)
+                    .map(|p| p.post_id.clone())
+                    .collect();
+                if ids.is_empty() {
+                    cli::info("No new accessible posts. Check the blog first.");
+                    continue;
+                }
+                if let Some(options) = cli::read_download_options() {
+                    match downloaded::download_posts(
+                        client,
+                        cfg,
+                        blog,
+                        &ids,
+                        options,
+                        false,
+                        &CancellationToken::new(),
+                    )
+                    .await
+                    {
+                        Ok(result) => {
+                            cli::print_download_posts_result(&result);
+                            if let Ok(updated) = downloaded::refresh_blog(
+                                client,
+                                cfg,
+                                blog,
+                                &CancellationToken::new(),
+                            )
+                            .await
+                            {
+                                snapshot = Some(updated);
+                            }
+                        }
+                        Err(e) => log_error!("{:#}", e),
+                    }
+                }
+            }
+            3 => {
+                download_selected_post(client, cfg, blog, snapshot.as_ref(), false).await?;
+            }
+            4 => {
+                download_selected_post(client, cfg, blog, snapshot.as_ref(), true).await?;
+            }
+            5 => {
+                let Some(current) = snapshot.as_ref() else {
+                    cli::info("Nothing to delete.");
+                    continue;
+                };
+                if let Some(post) = select_snapshot_post(current)
+                    && cli::confirm_delete(&format!("post '{}'", post.title))
+                {
+                    downloaded::delete_post(cfg, blog, &post.post_id).await?;
+                    snapshot = downloaded::scan(&download_path)
+                        .await?
+                        .into_iter()
+                        .find(|b| b.blog == blog);
+                    cli::info("Post deleted.");
+                }
+            }
+            6 => {
+                if cli::confirm_delete(&format!("blog '{blog}'")) {
+                    downloaded::delete_blog(cfg, blog).await?;
+                    cli::info("Blog deleted.");
+                    return Ok(());
+                }
+            }
+            _ => return Ok(()),
+        }
+    }
+}
+
+fn select_snapshot_post(snapshot: &downloaded::BlogSnapshot) -> Option<&downloaded::PostSnapshot> {
+    if snapshot.posts.is_empty() {
+        cli::info("No posts.");
+        return None;
+    }
+    let labels: Vec<String> = snapshot
+        .posts
+        .iter()
+        .map(|p| {
+            let paid = if p.is_paid { " [paid]" } else { "" };
+            format!("[{}] {}{paid}", p.status.as_label(), p.title)
+        })
+        .collect();
+    let index = cli::select_post_index(&labels)?;
+    snapshot.posts.get(index)
+}
+
+async fn download_selected_post(
+    client: &ApiClient,
+    cfg: &AppConfig,
+    blog: &str,
+    snapshot: Option<&downloaded::BlogSnapshot>,
+    force: bool,
+) -> Result<()> {
+    let Some(current) = snapshot else {
+        cli::info("Check the blog first.");
+        return Ok(());
+    };
+    let Some(post) = select_snapshot_post(current) else {
+        return Ok(());
+    };
+    if !force && post.status == downloaded::PostSyncStatus::UpToDate {
+        cli::info("Post is up to date. Use redownload to replace files.");
+        return Ok(());
+    }
+    let Some(options) = cli::read_download_options() else {
+        return Ok(());
+    };
+    match downloaded::download_posts(
+        client,
+        cfg,
+        blog,
+        std::slice::from_ref(&post.post_id),
+        options,
+        force,
+        &CancellationToken::new(),
+    )
+    .await
+    {
+        Ok(result) => cli::print_download_posts_result(&result),
+        Err(e) => log_error!("{:#}", e),
+    }
     Ok(())
 }

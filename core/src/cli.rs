@@ -1,8 +1,8 @@
 use crate::{
-    file_handler::DownloadResult, log_error, log_info, log_warn, DownloadOption, DownloadOptions,
+    DownloadOption, DownloadOptions, file_handler::DownloadResult, log_error, log_info, log_warn,
 };
 use anyhow::Error;
-use dialoguer::{theme::ColorfulTheme, Input, MultiSelect, Select};
+use dialoguer::{Confirm, Input, MultiSelect, Select, theme::ColorfulTheme};
 use std::{
     collections::{HashMap, HashSet},
     path::Path,
@@ -36,6 +36,7 @@ pub fn read_input_menu() -> i8 {
     let items = vec![
         "Download content from URL (blog or post)",
         "Download content from a list of URLs (file)",
+        "Manage downloaded content",
         "Enter access token",
         "Enter refresh token and client id",
         "Clear tokens and client id",
@@ -55,7 +56,7 @@ pub fn read_input_menu() -> i8 {
 
     match selection {
         Ok(Some(index)) => (index) as i8,
-        _ => 10,
+        _ => 11,
     }
 }
 
@@ -324,5 +325,106 @@ pub fn print_error(e: &Error) {
         }
     } else {
         error(&format!("{e}"));
+    }
+}
+
+pub fn read_downloaded_blog_action() -> i8 {
+    let items = vec![
+        "Check blog",
+        "Show posts",
+        "Download new posts",
+        "Download / resume post",
+        "Redownload post",
+        "Delete post",
+        "Delete blog",
+        "Back",
+    ];
+    let selection = Select::with_theme(&ColorfulTheme::default())
+        .with_prompt("Downloaded blog")
+        .items(&items)
+        .default(0)
+        .interact_opt();
+    match selection {
+        Ok(Some(index)) => index as i8,
+        _ => 7,
+    }
+}
+
+pub fn select_blog_name(blogs: &[String]) -> Option<String> {
+    if blogs.is_empty() {
+        return None;
+    }
+    let mut items = blogs.to_vec();
+    items.push("(Back)".to_string());
+    let selection = Select::with_theme(&ColorfulTheme::default())
+        .with_prompt("Select blog")
+        .items(&items)
+        .default(0)
+        .interact_opt()
+        .ok()
+        .flatten()?;
+    if selection >= blogs.len() {
+        None
+    } else {
+        Some(blogs[selection].clone())
+    }
+}
+
+pub fn select_post_index(labels: &[String]) -> Option<usize> {
+    if labels.is_empty() {
+        return None;
+    }
+    let mut items = labels.to_vec();
+    items.push("(Back)".to_string());
+    let selection = Select::with_theme(&ColorfulTheme::default())
+        .with_prompt("Select post")
+        .items(&items)
+        .default(0)
+        .interact_opt()
+        .ok()
+        .flatten()?;
+    if selection >= labels.len() {
+        None
+    } else {
+        Some(selection)
+    }
+}
+
+pub fn confirm_delete(what: &str) -> bool {
+    Confirm::with_theme(&ColorfulTheme::default())
+        .with_prompt(format!("Delete {what}?"))
+        .default(false)
+        .interact()
+        .unwrap_or(false)
+}
+
+pub fn print_download_posts_result(result: &crate::downloaded::DownloadPostsResult) {
+    if result.downloaded == 0 && result.skipped > 0 {
+        info("Post skipped: no access or empty content");
+        return;
+    }
+    if result.skipped > 0 {
+        info(&format!(
+            "Downloaded {}, skipped {}",
+            result.downloaded, result.skipped
+        ));
+        return;
+    }
+    info("Download finished.");
+}
+
+pub fn print_downloaded_posts(posts: &[crate::downloaded::PostSnapshot]) {
+    if posts.is_empty() {
+        info("No posts");
+        return;
+    }
+    for post in posts {
+        println!(
+            "  [{}] {}{}  ({})",
+            post.status.as_label(),
+            post.title,
+            if post.is_paid { " [paid]" } else { "" },
+            post.post_id
+        );
     }
 }
