@@ -209,6 +209,12 @@ pub async fn prepare_folder_path(
     post_id: &str,
     base_path: &Path,
 ) -> Result<PathBuf> {
+    if let Some(existing) =
+        crate::blog_index::resolve_post_folder(base_path, blog_name, post_id).await?
+    {
+        return Ok(existing);
+    }
+
     let folder_name = post_folder_name(post_title, created_at, post_id);
 
     let post_folder_path: PathBuf = ensure_post_folder(blog_name, &folder_name, base_path)
@@ -218,6 +224,29 @@ pub async fn prepare_folder_path(
         })?;
 
     Ok(post_folder_path)
+}
+
+pub async fn clear_dir_contents(dir: &Path) -> Result<()> {
+    if !fs::try_exists(dir).await.unwrap_or(false) {
+        return Ok(());
+    }
+    let mut rd = fs::read_dir(dir)
+        .await
+        .with_context(|| format!("Failed to read folder '{}'", dir.display()))?;
+    while let Some(entry) = rd.next_entry().await? {
+        let path = entry.path();
+        let meta = fs::metadata(&path).await?;
+        if meta.is_dir() {
+            fs::remove_dir_all(&path)
+                .await
+                .with_context(|| format!("Failed to remove '{}'", path.display()))?;
+        } else {
+            fs::remove_file(&path)
+                .await
+                .with_context(|| format!("Failed to remove '{}'", path.display()))?;
+        }
+    }
+    Ok(())
 }
 
 pub async fn prepare_folder_path_for_comments(post_folder_path: &Path) -> Result<PathBuf> {

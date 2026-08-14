@@ -113,10 +113,15 @@ async fn process(
     )
     .await?;
 
+    let folder_name = post_folder_path
+        .file_name()
+        .map(|s| s.to_string_lossy().into_owned())
+        .unwrap_or_default();
+
     let page = PostPage {
         folder: post_folder_path,
         post_id: post.id.clone(),
-        title: post_title,
+        title: post_title.clone(),
         created_at: post.created_at,
         author: post.user.name.clone(),
         blog: post.user.blog_url.clone(),
@@ -126,6 +131,19 @@ async fn process(
     };
 
     post_page::write_post_page(&page).await?;
+
+    crate::blog_index::upsert_post(
+        download_path,
+        blog_name,
+        &post.id,
+        &post_title,
+        &folder_name,
+        post.created_at,
+        post.updated_at,
+        &download_options,
+        post.price > 0.0,
+    )
+    .await?;
 
     Ok(Some(page))
 }

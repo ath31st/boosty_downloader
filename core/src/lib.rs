@@ -1,3 +1,4 @@
+pub(crate) mod blog_index;
 pub(crate) mod checks;
 pub(crate) mod cli;
 pub(crate) mod comment_handler;
@@ -5,6 +6,7 @@ pub(crate) mod config;
 pub(crate) mod console_logger;
 pub(crate) mod content_items_handler;
 pub(crate) mod download_options;
+pub(crate) mod downloaded;
 pub(crate) mod file_handler;
 pub(crate) mod headers;
 pub(crate) mod logger;
@@ -22,6 +24,12 @@ pub use config::{
 pub use console_logger::ConsoleLogger;
 pub use download_options::{
     DownloadOption, DownloadOptions, default_download_options, filter_content_items,
+};
+pub use downloaded::{
+    BlogSnapshot, DownloadPostsResult, PostSnapshot, PostSyncStatus,
+    delete_blog as delete_downloaded_blog, delete_post as delete_downloaded_post,
+    download_posts as download_downloaded_posts, refresh_blog as refresh_downloaded_blog,
+    scan as scan_downloaded,
 };
 pub use logger::{LogLevel, LogMessage, Logger, ProgressMessage, get_logger, set_logger};
 pub use menu_handler::{handle_menu, process_boosty_url};
