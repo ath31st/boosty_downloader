@@ -53,6 +53,7 @@ Boosty Downloader — portable приложение для загрузки ко
    2.1. **Графическая версия (GUI)**
 
    ![gui_main](images/gui_main.jpg)
+   ![gui_downloaded.jpg](images/gui_downloaded.jpg)
    ![gui_config](images/gui_config.jpg)
 
    В GUI три экрана: **Загрузка** (URL, прогресс и логи), **Скачанное** (список блогов и постов) и **Настройки**.
