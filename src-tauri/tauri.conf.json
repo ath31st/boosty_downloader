@@ -12,8 +12,8 @@
     "windows": [
       {
         "title": "Boosty Downloader",
-        "width": 800,
-        "height": 630,
+        "width": 1200,
+        "height": 830,
         "resizable": false
       }
     ],

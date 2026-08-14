@@ -47,6 +47,13 @@
   --success: hsl(140, 50%, 50%);
 }
 
+html,
+body,
+#root {
+  height: 100%;
+  overflow: hidden;
+}
+
 body {
   margin: 0;
   background-color: var(--background);
@@ -67,4 +74,3 @@ body {
   width: 33%;
   animation: progress-indeterminate 1.2s ease-in-out infinite;
 }
-

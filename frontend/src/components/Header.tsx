@@ -38,7 +38,7 @@ export function Header({
     isNewerVersion(latestVersion, currentVersion);
 
   return (
-    <header className="relative mb-4 flex items-center justify-center">
+    <header className="relative mb-4 flex shrink-0 items-center justify-center">
       {currentVersion && (
         <a
           href="https://github.com/ath31st/boosty_downloader/releases"
