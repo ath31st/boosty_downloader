@@ -34,3 +34,4 @@ dist-ssr
 # ide
 .vscode
 .idea
+.cursor
