@@ -34,7 +34,7 @@ pub fn warning(msg: &str) {
 
 pub fn read_input_menu() -> i8 {
     let items = vec![
-        "Download content from URL (blog or post)",
+        "Download content from URL (blog, post or bundle)",
         "Download content from a list of URLs (file)",
         "Manage downloaded content",
         "Enter access token",

@@ -45,7 +45,7 @@ export default function MainPage({ session }: MainPageProps) {
 
         <div className="flex flex-row gap-4">
           <Input
-            placeholder="URL адрес блога или конкретного поста"
+            placeholder="URL адрес блога, поста или бандла"
             value={url}
             onChange={(value) => setUrl(String(value))}
             disabled={isDownloading}
