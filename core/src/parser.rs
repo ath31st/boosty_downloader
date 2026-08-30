@@ -7,6 +7,15 @@ use crate::post_page::TextStyle;
 pub enum BoostyUrl {
     Blog(String),
     Post { blog: String, post_id: String },
+    Bundle { blog: String, bundle_id: String },
+}
+
+impl BoostyUrl {
+    pub fn blog(&self) -> &str {
+        match self {
+            Self::Blog(blog) | Self::Post { blog, .. } | Self::Bundle { blog, .. } => blog,
+        }
+    }
 }
 
 pub fn parse_boosty_url(url_str: &str) -> Result<BoostyUrl> {
@@ -31,6 +40,10 @@ pub fn parse_boosty_url(url_str: &str) -> Result<BoostyUrl> {
         [blog, "posts", post_id] => Ok(BoostyUrl::Post {
             blog: blog.to_string(),
             post_id: post_id.to_string(),
+        }),
+        [blog, "bundle", bundle_id] => Ok(BoostyUrl::Bundle {
+            blog: blog.to_string(),
+            bundle_id: bundle_id.to_string(),
         }),
         _ => anyhow::bail!("URL does not match expected Boosty format"),
     }
@@ -314,6 +327,34 @@ fn sanitize_id(id: &str) -> Option<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn parse_blog_post_and_bundle_urls() {
+        match parse_boosty_url("https://boosty.to/ath31st").unwrap() {
+            BoostyUrl::Blog(blog) => assert_eq!(blog, "ath31st"),
+            other => panic!("expected blog, got blog={}", other.blog()),
+        }
+
+        match parse_boosty_url("https://boosty.to/ath31st/posts/abc123").unwrap() {
+            BoostyUrl::Post { blog, post_id } => {
+                assert_eq!(blog, "ath31st");
+                assert_eq!(post_id, "abc123");
+            }
+            other => panic!("expected post, got blog={}", other.blog()),
+        }
+
+        match parse_boosty_url(
+            "https://boosty.to/ath31st/bundle/7f736966-0cce-46a2-afa1-3d5c6849e474?isFromShowcasePreview=true",
+        )
+        .unwrap()
+        {
+            BoostyUrl::Bundle { blog, bundle_id } => {
+                assert_eq!(blog, "ath31st");
+                assert_eq!(bundle_id, "7f736966-0cce-46a2-afa1-3d5c6849e474");
+            }
+            other => panic!("expected bundle, got blog={}", other.blog()),
+        }
+    }
 
     #[test]
     fn parse_text_reads_style() {
