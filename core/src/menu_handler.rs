@@ -160,8 +160,8 @@ pub async fn process_boosty_url(
     cancel_token: &CancellationToken,
 ) -> Result<usize> {
     crate::ensure_not_cancelled(cancel_token)?;
-    let offset: Option<String> = match offset_url {
-        Some(BoostyUrl::Post { blog, post_id }) => {
+    let offset: Option<String> = match (url, offset_url) {
+        (BoostyUrl::Blog(_), Some(BoostyUrl::Post { blog, post_id })) => {
             crate::ensure_not_cancelled(cancel_token)?;
             let offset_post = client.get_post(&blog, &post_id).await?;
             Some(format!("{}:{}", offset_post.sort_order, offset_post.int_id))
@@ -184,6 +184,16 @@ pub async fn process_boosty_url(
                 anyhow!("Failed to fetch post '{post_id}' for blog '{blog}', {}", e)
             })?;
             post_handler::PostsResult::Single(Box::from(single))
+        }
+        BoostyUrl::Bundle { blog, bundle_id } => {
+            crate::ensure_not_cancelled(cancel_token)?;
+            let multiple = client
+                .get_bundle_posts(blog, bundle_id, cfg.posts_limit, None)
+                .await
+                .map_err(|e| {
+                    anyhow!("Failed to fetch bundle '{bundle_id}' for blog '{blog}', {}", e)
+                })?;
+            post_handler::PostsResult::Multiple(multiple)
         }
     };
 
@@ -222,15 +232,7 @@ pub async fn process_boosty_url(
         cancel_token,
     )
     .await
-    .with_context(|| {
-        format!(
-            "Error while processing post content: {}",
-            match &url {
-                BoostyUrl::Blog(blog) => blog,
-                BoostyUrl::Post { blog, .. } => blog,
-            }
-        )
-    })?;
+    .with_context(|| format!("Error while processing post content: {}", url.blog()))?;
 
     if !comment_targets.is_empty() {
         let mut comments_results = Vec::new();
