@@ -1,0 +1,131 @@
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+
+jobs:
+  check-version:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+
+      - name: Check tag matches app version
+        run: |
+          node -e '
+          const { readFileSync } = require("node:fs");
+          const conf = JSON.parse(readFileSync("src-tauri/tauri.conf.json", "utf8"));
+          const cargoVersions = ["core/Cargo.toml", "src-tauri/Cargo.toml"].map((path) => {
+            const text = readFileSync(path, "utf8");
+            const match = text.match(/\[package\][\s\S]*?^version\s*=\s*"([^"]+)"/m);
+            if (!match) {
+              console.error(`no package version in ${path}`);
+              process.exit(1);
+            }
+            return match[1];
+          });
+          const tag = process.env.GITHUB_REF_NAME;
+          const expected = tag.startsWith("v") ? tag.slice(1) : tag;
+          const versions = [conf.version, ...cargoVersions];
+          if (versions.some((version) => version !== expected)) {
+            console.error(`tag ${tag} does not match versions ${versions.join(", ")}`);
+            process.exit(1);
+          }
+          console.log(`tag ${tag} matches version ${expected}`);
+          '
+
+  publish:
+    needs: check-version
+    permissions:
+      contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: ubuntu-22.04
+            args: --bundles appimage -- --locked
+            uploadPlainBinary: false
+            assetPattern: "boosty_downloader_gui-[version]-linux-x86_64[ext]"
+          - platform: windows-latest
+            args: --no-bundle -- --locked
+            uploadPlainBinary: true
+            assetPattern: "boosty_downloader_gui-[version]-windows-x86_64[ext]"
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: .
+
+      - name: Enable Yarn
+        run: |
+          corepack enable
+          corepack prepare yarn@1.22.22 --activate
+
+      - name: Install Linux dependencies
+        if: matrix.platform == 'ubuntu-22.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+
+      - name: Install frontend dependencies
+        run: yarn --cwd frontend --frozen-lockfile
+
+      - uses: tauri-apps/tauri-action@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          projectPath: src-tauri
+          tagName: ${{ github.ref_name }}
+          releaseName: "Boosty Downloader ${{ github.ref_name }}"
+          generateReleaseNotes: true
+          releaseDraft: false
+          prerelease: false
+          args: ${{ matrix.args }}
+          uploadUpdaterJson: false
+          uploadPlainBinary: ${{ matrix.uploadPlainBinary }}
+          releaseAssetNamePattern: ${{ matrix.assetPattern }}
+
+      - name: Upload Linux GUI binary
+        if: matrix.platform == 'ubuntu-22.04'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          ASSET="boosty_downloader_gui-${VERSION}-linux-x86_64"
+          cp target/release/boosty_downloader_gui "$ASSET"
+          chmod +x "$ASSET"
+          gh release upload "$GITHUB_REF_NAME" "$ASSET" --clobber
+
+      - name: Build and upload CLI
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cargo build --release --locked -p boosty_downloader_core --bin boosty_downloader_cli
+          VERSION="${GITHUB_REF_NAME#v}"
+          if [[ "${{ matrix.platform }}" == "windows-latest" ]]; then
+            BIN="target/release/boosty_downloader_cli.exe"
+            ASSET="boosty_downloader_cli-${VERSION}-windows-x86_64.exe"
+          else
+            BIN="target/release/boosty_downloader_cli"
+            ASSET="boosty_downloader_cli-${VERSION}-linux-x86_64"
+          fi
+          cp "$BIN" "$ASSET"
+          if [[ "${{ matrix.platform }}" != "windows-latest" ]]; then
+            chmod +x "$ASSET"
+          fi
+          gh release upload "$GITHUB_REF_NAME" "$ASSET" --clobber
