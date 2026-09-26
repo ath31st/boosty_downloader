@@ -1,0 +1,4 @@
+{
+  "$schema": "./frontend/node_modules/@biomejs/biome/configuration_schema.json",
+  "root": false
+}
