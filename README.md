@@ -20,7 +20,7 @@
 
 ## Версия приложения
 
-### 0.17.1/0.12.1
+### 0.18.0
 
 ## Описание
 
@@ -60,16 +60,14 @@ Boosty Downloader — portable приложение для загрузки ко
 
    Запустите графическое приложение в зависимости от вашей системы:
     - **Windows**: Дважды щёлкните по файлу `boosty_downloader_gui-x.x.x-windows-x86_64.exe`.
-    - **Linux**:
+    - **Linux**: основной файл — AppImage, системный WebKit для него не нужен.
         1. Откройте терминал в папке с загруженным файлом.
-        2. Сделайте файл исполняемым командой:
+        2. Сделайте файл исполняемым и запустите:
            ```bash
-           chmod +x boosty_downloader_gui-x.x.x-linux-x86_64
+           chmod +x boosty_downloader_gui-x.x.x-linux-x86_64.AppImage
+           ./boosty_downloader_gui-x.x.x-linux-x86_64.AppImage
            ```
-        3. Запустите приложение:
-           ```bash
-           ./boosty_downloader_gui-x.x.x-linux-x86_64
-           ```
+        Рядом лежит обычный ELF `boosty_downloader_gui-x.x.x-linux-x86_64`. Ему нужен системный WebKit (`libwebkit2gtk-4.1`).
 
    2.2. **Консольная версия (CLI)**
 
@@ -94,6 +92,7 @@ Boosty Downloader — portable приложение для загрузки ко
 
 ### Требования
 - Установленный [Rust](https://www.rust-lang.org/tools/install).
+- Для **GUI**: [Yarn](https://yarnpkg.com/) 1 и зависимости из `frontend/`.
 - Для **GUI на Linux**: `libwebkit2gtk-4.1-dev`.
   ```bash
   sudo apt install libwebkit2gtk-4.1-dev
@@ -106,18 +105,18 @@ cd boosty_downloader
 ```
 
 ### Сборка
-**CLI версия:**
+Из корня репозитория:
+
 ```bash
-cargo build --release --bin boosty_downloader_cli
+yarn build
 ```
 
-**GUI версия:**
-```bash
-cargo build --release --bin boosty_downloader_gui
-```
+По отдельности: `yarn build:cli`, `yarn build:cli:windows`, `yarn build:gui`, `yarn build:gui:windows`.
+
+`yarn build:gui` вызывает `cargo tauri build --no-bundle` и собирает только ELF `target/release/boosty_downloader_gui`. Windows собирается кроссом `x86_64-pc-windows-gnu`, exe лежит в `target/x86_64-pc-windows-gnu/release/`. Перед GUI-сборкой во `frontend/` должны быть установлены зависимости (`yarn --cwd frontend install`).
 
 ### Запуск
-Бинарники находятся в `target/release/`.
+**CLI** лежит в `target/release/`.
 
 **Linux:**
 ```bash
@@ -126,6 +125,8 @@ cargo build --release --bin boosty_downloader_gui
 
 **Windows:**
 Запустите `target\release\boosty_downloader_cli.exe`.
+
+**GUI:** `target/release/boosty_downloader_gui`.
 
 ## Особенности
 
@@ -211,7 +212,7 @@ cargo build --release --bin boosty_downloader_gui
 
    ![dll_not_found](images/dll_not_found.jpg)
 
-   Скачайте архив с boosty_downloader_gui-x.x.x-windows-x86_64.zip [из релиза последней версии](https://github.com/ath31st/boosty_downloader/releases), распакуйте и запустите приложение, там уже будет нужная библиотека WebView2Loader.
+   Установите [WebView2 Runtime](https://developer.microsoft.com/microsoft-edge/webview2/).
 
 - Если возникнут проблемы с запуском на Linux из-за необходимости установки библиотеки libwebkit2gtk-4.0-dev.
 
