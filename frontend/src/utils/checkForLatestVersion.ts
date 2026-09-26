@@ -9,7 +9,11 @@ export async function checkForUpdate(): Promise<string | undefined> {
 
     if (res.ok) {
       const data = await res.json();
-      const tag = data.tag_name?.split('/')[1];
+      const match =
+        typeof data.tag_name === 'string'
+          ? data.tag_name.match(/^v(\d+\.\d+\.\d+)$/)
+          : null;
+      const tag = match?.[1];
 
       console.log(`Latest version: ${tag}`);
 
