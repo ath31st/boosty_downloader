@@ -1,0 +1,13 @@
+{
+  "name": "boosty_downloader",
+  "private": true,
+  "scripts": {
+    "version:set": "node scripts/set-version.mjs",
+    "release": "node scripts/release.mjs",
+    "build:cli": "cargo build --release -p boosty_downloader_core --bin boosty_downloader_cli",
+    "build:cli:windows": "cargo build --release --target x86_64-pc-windows-gnu -p boosty_downloader_core --bin boosty_downloader_cli",
+    "build:gui": "cargo tauri build --no-bundle",
+    "build:gui:windows": "cargo tauri build --target x86_64-pc-windows-gnu --no-bundle",
+    "build": "yarn build:cli && yarn build:cli:windows && yarn build:gui && yarn build:gui:windows"
+  }
+}
