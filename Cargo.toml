@@ -1,0 +1,4 @@
+[workspace]
+resolver = "3"
+members = ["core", "src-tauri"]
+default-members = ["core"]

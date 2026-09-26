@@ -1,5 +1,6 @@
 # cargo target
 /target
+/core/target
 
 # Logs
 logs
