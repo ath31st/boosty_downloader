@@ -1,6 +1,6 @@
 [package]
 name = "boosty_downloader_core"
-version = "0.17.1"
+version = "0.18.0"
 edition = "2024"
 
 [lib]
@@ -12,7 +12,7 @@ name = "boosty_downloader_cli"
 path = "src/main.rs"
 
 [dependencies]
-boosty_api = { path = "../../boosty_api" }
+boosty_api = "0.31.1"
 tokio = { version = "1.48.0", features = [
     "macros",
     "rt-multi-thread",
