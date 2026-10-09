@@ -12,7 +12,7 @@ name = "boosty_downloader_cli"
 path = "src/main.rs"
 
 [dependencies]
-boosty_api = "0.31.1"
+boosty_api = "0.32.0"
 tokio = { version = "1.48.0", features = [
     "macros",
     "rt-multi-thread",

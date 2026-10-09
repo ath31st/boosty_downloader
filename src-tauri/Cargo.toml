@@ -17,7 +17,7 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 tauri-build = { version = "2.6.3", features = [] }
 
 [dependencies]
-boosty_api = "0.31.1"
+boosty_api = "0.32.0"
 boosty_downloader_core = { path = "../core" }
 anyhow = "1.0.100"
 tauri = { version = "2.11.6", features = [] }
