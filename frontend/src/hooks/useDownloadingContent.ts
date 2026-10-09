@@ -3,6 +3,7 @@ import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 import { toast } from 'sonner';
 import type { DownloadOptions } from '@/types/downloadOptions';
+import type { VideoQuality } from '@/types/videoQuality';
 import type { LogMessage } from '@/types/logMessage';
 import type { ProgressMessage } from '@/types/progressMessage';
 
@@ -26,6 +27,7 @@ export function useDownloadingContent() {
   const [isDownloading, setDownloading] = useState(false);
   const [downloadOptions, setDownloadOptions] =
     useState<DownloadOptions>(DEFAULT_OPTIONS);
+  const [videoQuality, setVideoQuality] = useState<VideoQuality>('ultra_hd');
   const [logs, setLogs] = useState<LogMessage[]>([]);
   const [progress, setProgress] = useState(EMPTY_PROGRESS);
   const logsEndRef = useRef<HTMLDivElement>(null);
@@ -71,6 +73,8 @@ export function useDownloadingContent() {
     setDownloading,
     downloadOptions,
     setDownloadOptions,
+    videoQuality,
+    setVideoQuality,
     logs,
     progress,
     logsEndRef,
