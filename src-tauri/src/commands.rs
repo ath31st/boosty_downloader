@@ -2,8 +2,8 @@ use std::sync::Arc;
 
 use boosty_api::api_client::ApiClient;
 use boosty_downloader_core::{
-    AppConfig, BlogSnapshot, DownloadOptions, DownloadPostsResult, log_error, log_info,
-    scan_downloaded,
+    AppConfig, BlogSnapshot, DownloadOptions, DownloadPostsResult, VideoQualityCeiling, log_error,
+    log_info, scan_downloaded,
 };
 use tauri::State;
 use tokio::sync::Mutex;
@@ -103,6 +103,7 @@ pub async fn download_content(
     url: String,
     offset_url: Option<String>,
     download_options: DownloadOptions,
+    video_quality: VideoQualityCeiling,
     state: State<'_, Arc<Mutex<AppState>>>,
 ) -> Result<(), String> {
     let (client, cfg, token) = take_work_slot(&state).await?;
@@ -125,6 +126,7 @@ pub async fn download_content(
         &ctx.url,
         ctx.offset,
         download_options,
+        video_quality.into(),
         &token,
     )
     .await;
@@ -180,6 +182,7 @@ pub async fn download_downloaded_posts(
     blog: String,
     post_ids: Vec<String>,
     download_options: DownloadOptions,
+    video_quality: VideoQualityCeiling,
     force: bool,
     state: State<'_, Arc<Mutex<AppState>>>,
 ) -> Result<DownloadPostsResult, String> {
@@ -190,6 +193,7 @@ pub async fn download_downloaded_posts(
         &blog,
         &post_ids,
         download_options,
+        video_quality.into(),
         force,
         &token,
     )
