@@ -1,5 +1,6 @@
 use crate::{
-    DownloadOption, DownloadOptions, file_handler::DownloadResult, log_error, log_info, log_warn,
+    DownloadOption, DownloadOptions, VideoQualityCeiling, file_handler::DownloadResult, log_error,
+    log_info, log_warn,
 };
 use anyhow::Error;
 use dialoguer::{Confirm, Input, MultiSelect, Select, theme::ColorfulTheme};
@@ -227,6 +228,27 @@ pub fn read_download_options() -> Option<DownloadOptions> {
             }
             Some(Arc::new(selected_set))
         }
+        _ => None,
+    }
+}
+
+pub fn read_video_quality() -> Option<VideoQualityCeiling> {
+    let items = ["Maximum (Ultra HD)", "Full HD", "High", "Medium", "Low"];
+
+    let selection = Select::with_theme(&ColorfulTheme::default())
+        .with_prompt("Select maximum OK.ru video quality")
+        .items(&items)
+        .default(0)
+        .interact_opt();
+
+    match selection {
+        Ok(Some(index)) => Some(match index {
+            0 => VideoQualityCeiling::UltraHd,
+            1 => VideoQualityCeiling::FullHd,
+            2 => VideoQualityCeiling::High,
+            3 => VideoQualityCeiling::Medium,
+            _ => VideoQualityCeiling::Low,
+        }),
         _ => None,
     }
 }

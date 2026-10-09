@@ -1,8 +1,9 @@
 use crate::{
-    DownloadOptions, cli, content_items_handler, download_options, file_handler, log_error,
-    post_page, progress_reporter,
+    DownloadOption, DownloadOptions, cli, content_items_handler, download_options, file_handler,
+    log_error, post_page, progress_reporter,
 };
 use anyhow::Result;
+use boosty_api::media_content::VideoQuality;
 use boosty_api::model::Post;
 use boosty_api::traits::{HasContent, HasTitle, IsAvailable};
 use post_page::PostPage;
@@ -41,6 +42,7 @@ pub async fn process_posts(
     result: PostsResult,
     download_path: &Path,
     download_options: DownloadOptions,
+    video_quality: VideoQuality,
     cancel_token: &CancellationToken,
 ) -> Result<Vec<PostPage>> {
     let mut pages = Vec::new();
@@ -48,7 +50,15 @@ pub async fn process_posts(
         PostsResult::Multiple(posts) => {
             for post in posts {
                 crate::ensure_not_cancelled(cancel_token)?;
-                match process(&post, download_path, download_options.clone(), cancel_token).await {
+                match process(
+                    &post,
+                    download_path,
+                    download_options.clone(),
+                    video_quality,
+                    cancel_token,
+                )
+                .await
+                {
                     Ok(Some(page)) => pages.push(page),
                     Ok(None) => {}
                     Err(e) => {
@@ -62,7 +72,15 @@ pub async fn process_posts(
         }
         PostsResult::Single(post) => {
             crate::ensure_not_cancelled(cancel_token)?;
-            match process(&post, download_path, download_options, cancel_token).await {
+            match process(
+                &post,
+                download_path,
+                download_options,
+                video_quality,
+                cancel_token,
+            )
+            .await
+            {
                 Ok(Some(page)) => pages.push(page),
                 Ok(None) => {}
                 Err(e) => {
@@ -81,6 +99,7 @@ async fn process(
     post: &Post,
     download_path: &Path,
     download_options: DownloadOptions,
+    video_quality: VideoQuality,
     cancel_token: &CancellationToken,
 ) -> Result<Option<PostPage>> {
     crate::ensure_not_cancelled(cancel_token)?;
@@ -100,7 +119,10 @@ async fn process(
     )
     .await?;
 
-    let items = post.extract_content();
+    if download_options.contains(&DownloadOption::Video) {
+        content_items_handler::log_ok_video_fallbacks(&post.data, video_quality);
+    }
+    let items = post.extract_content_with_video_quality(video_quality);
     let filtered_items = download_options::filter_content_items(items, &download_options);
 
     let body = content_items_handler::process_content_items(

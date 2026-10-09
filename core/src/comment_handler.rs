@@ -2,15 +2,15 @@ use std::path::Path;
 
 use anyhow::{Context, Result};
 use boosty_api::{
-    media_content::ContentItem,
+    media_content::{ContentItem, VideoQuality},
     model::Comment,
     traits::{HasContent, IsAvailable},
 };
 use tokio_util::sync::CancellationToken;
 
 use crate::{
-    DownloadOptions, cli, content_items_handler, download_options, file_handler, log_error,
-    post_page, progress_reporter,
+    DownloadOption, DownloadOptions, cli, content_items_handler, download_options, file_handler,
+    log_error, post_page, progress_reporter,
 };
 use post_page::{CommentView, PostPage};
 
@@ -24,6 +24,7 @@ pub async fn process_comments(
     results: Vec<CommentsResult>,
     pages: &mut [PostPage],
     download_options: DownloadOptions,
+    video_quality: VideoQuality,
     cancel_token: &CancellationToken,
 ) -> Result<()> {
     if results.is_empty() {
@@ -43,7 +44,15 @@ pub async fn process_comments(
             continue;
         };
 
-        if let Err(e) = process_one(page, &result, download_options.clone(), cancel_token).await {
+        if let Err(e) = process_one(
+            page,
+            &result,
+            download_options.clone(),
+            video_quality,
+            cancel_token,
+        )
+        .await
+        {
             if crate::is_cancelled_error(&e) {
                 return Err(e);
             }
@@ -61,11 +70,12 @@ async fn process_one(
     page: &mut PostPage,
     result: &CommentsResult,
     download_options: DownloadOptions,
+    video_quality: VideoQuality,
     cancel_token: &CancellationToken,
 ) -> Result<()> {
     crate::ensure_not_cancelled(cancel_token)?;
 
-    process(page, result, download_options, cancel_token)
+    process(page, result, download_options, video_quality, cancel_token)
         .await
         .with_context(|| {
             format!(
@@ -83,6 +93,7 @@ async fn process(
     page: &mut PostPage,
     cr: &CommentsResult,
     download_options: DownloadOptions,
+    video_quality: VideoQuality,
     cancel_token: &CancellationToken,
 ) -> Result<()> {
     crate::ensure_not_cancelled(cancel_token)?;
@@ -100,6 +111,7 @@ async fn process(
             &page.title,
             &comments_folder_path,
             &download_options,
+            video_quality,
             cancel_token,
             &mut comments,
         )
@@ -116,12 +128,16 @@ async fn collect_comment_views(
     post_title: &str,
     comments_folder_path: &Path,
     download_options: &DownloadOptions,
+    video_quality: VideoQuality,
     cancel_token: &CancellationToken,
     out: &mut Vec<CommentView>,
 ) -> Result<()> {
     crate::ensure_not_cancelled(cancel_token)?;
 
-    let items = comment.extract_content();
+    if download_options.contains(&DownloadOption::Video) {
+        content_items_handler::log_ok_video_fallbacks(&comment.data, video_quality);
+    }
+    let items = comment.extract_content_with_video_quality(video_quality);
     let filtered = download_options::filter_content_items(items, download_options);
     let blocks = content_items_handler::process_content_items(
         filtered,
@@ -148,6 +164,7 @@ async fn collect_comment_views(
                 post_title,
                 comments_folder_path,
                 download_options,
+                video_quality,
                 cancel_token,
                 out,
             ))

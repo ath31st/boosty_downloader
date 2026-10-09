@@ -1,6 +1,7 @@
 use anyhow::{Context, Result};
 use boosty_api::api_client::ApiClient;
 use boosty_api::error::ApiError;
+use boosty_api::media_content::VideoQuality;
 use boosty_api::model::Post;
 use boosty_api::traits::{HasContent, HasTitle, IsAvailable};
 use chrono::Utc;
@@ -205,6 +206,7 @@ pub async fn download_posts(
     blog: &str,
     post_ids: &[String],
     download_options: DownloadOptions,
+    video_quality: VideoQuality,
     force: bool,
     cancel_token: &CancellationToken,
 ) -> Result<DownloadPostsResult> {
@@ -227,6 +229,7 @@ pub async fn download_posts(
             },
             None,
             download_options.clone(),
+            video_quality,
             cancel_token,
         )
         .await

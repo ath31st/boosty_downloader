@@ -13,6 +13,7 @@ use crate::progress_reporter;
 use crate::url_context;
 use anyhow::{Context, Result, anyhow};
 use boosty_api::api_client::ApiClient;
+use boosty_api::media_content::VideoQuality;
 use boosty_api::traits::HasTitle;
 use boosty_api::traits::IsAvailable;
 use std::path::Path;
@@ -27,6 +28,7 @@ pub async fn handle_menu(client: &ApiClient) -> Result<bool> {
 
             if let Some((input, offset_input)) = cli::read_download_url_and_offset()
                 && let Some(download_options) = cli::read_download_options()
+                && let Some(video_quality) = cli::read_video_quality()
             {
                 let offset_opt = if offset_input.is_empty() {
                     None
@@ -42,6 +44,7 @@ pub async fn handle_menu(client: &ApiClient) -> Result<bool> {
                     &ctx.url,
                     ctx.offset,
                     download_options,
+                    video_quality.into(),
                     &CancellationToken::new(),
                 )
                 .await
@@ -55,8 +58,15 @@ pub async fn handle_menu(client: &ApiClient) -> Result<bool> {
 
             if let Some(file_path_str) = cli::read_batch_file_path()
                 && let Some(download_options) = cli::read_download_options()
-                && let Err(e) =
-                    process_batch_file(client, &cfg, &file_path_str, download_options).await
+                && let Some(video_quality) = cli::read_video_quality()
+                && let Err(e) = process_batch_file(
+                    client,
+                    &cfg,
+                    &file_path_str,
+                    download_options,
+                    video_quality.into(),
+                )
+                .await
             {
                 log_error!("Batch process failed: {:#}", e);
             }
@@ -157,6 +167,7 @@ pub async fn process_boosty_url(
     url: &BoostyUrl,
     offset_url: Option<BoostyUrl>,
     download_options: DownloadOptions,
+    video_quality: VideoQuality,
     cancel_token: &CancellationToken,
 ) -> Result<usize> {
     crate::ensure_not_cancelled(cancel_token)?;
@@ -191,7 +202,10 @@ pub async fn process_boosty_url(
                 .get_bundle_posts(blog, bundle_id, cfg.posts_limit, None)
                 .await
                 .map_err(|e| {
-                    anyhow!("Failed to fetch bundle '{bundle_id}' for blog '{blog}', {}", e)
+                    anyhow!(
+                        "Failed to fetch bundle '{bundle_id}' for blog '{blog}', {}",
+                        e
+                    )
                 })?;
             post_handler::PostsResult::Multiple(multiple)
         }
@@ -229,6 +243,7 @@ pub async fn process_boosty_url(
         result,
         download_path,
         download_options.clone(),
+        video_quality,
         cancel_token,
     )
     .await
@@ -266,6 +281,7 @@ pub async fn process_boosty_url(
             comments_results,
             &mut pages,
             download_options,
+            video_quality,
             cancel_token,
         )
         .await
@@ -285,6 +301,7 @@ async fn process_batch_file(
     cfg: &AppConfig,
     file_path_str: &str,
     download_options: DownloadOptions,
+    video_quality: VideoQuality,
 ) -> Result<()> {
     let file_path = Path::new(file_path_str);
     let links = file_handler::read_links_from_file(file_path).await?;
@@ -302,6 +319,7 @@ async fn process_batch_file(
                     &ctx.url,
                     ctx.offset,
                     download_options.clone(),
+                    video_quality,
                     &CancellationToken::new(),
                 )
                 .await
@@ -373,13 +391,16 @@ async fn handle_downloaded_blog(client: &ApiClient, cfg: &AppConfig, blog: &str)
                     cli::info("No new accessible posts. Check the blog first.");
                     continue;
                 }
-                if let Some(options) = cli::read_download_options() {
+                if let Some(options) = cli::read_download_options()
+                    && let Some(video_quality) = cli::read_video_quality()
+                {
                     match downloaded::download_posts(
                         client,
                         cfg,
                         blog,
                         &ids,
                         options,
+                        video_quality.into(),
                         false,
                         &CancellationToken::new(),
                     )
@@ -474,12 +495,16 @@ async fn download_selected_post(
     let Some(options) = cli::read_download_options() else {
         return Ok(());
     };
+    let Some(video_quality) = cli::read_video_quality() else {
+        return Ok(());
+    };
     match downloaded::download_posts(
         client,
         cfg,
         blog,
         std::slice::from_ref(&post.post_id),
         options,
+        video_quality.into(),
         force,
         &CancellationToken::new(),
     )
