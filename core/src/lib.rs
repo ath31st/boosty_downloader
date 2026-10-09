@@ -23,7 +23,8 @@ pub use config::{
 };
 pub use console_logger::ConsoleLogger;
 pub use download_options::{
-    DownloadOption, DownloadOptions, default_download_options, filter_content_items,
+    DownloadOption, DownloadOptions, VideoQualityCeiling, default_download_options,
+    filter_content_items,
 };
 pub use downloaded::{
     BlogSnapshot, DownloadPostsResult, PostSnapshot, PostSyncStatus,

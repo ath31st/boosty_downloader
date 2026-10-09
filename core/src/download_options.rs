@@ -1,6 +1,30 @@
-use boosty_api::media_content::ContentItem;
+use boosty_api::media_content::{ContentItem, VideoQuality};
 use serde::{Deserialize, Serialize};
 use std::{collections::HashSet, sync::Arc};
+
+/// Quality ceiling for this download. Maps to `boosty_api::media_content::VideoQuality`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "snake_case")]
+pub enum VideoQualityCeiling {
+    #[default]
+    UltraHd,
+    FullHd,
+    High,
+    Medium,
+    Low,
+}
+
+impl From<VideoQualityCeiling> for VideoQuality {
+    fn from(value: VideoQualityCeiling) -> Self {
+        match value {
+            VideoQualityCeiling::UltraHd => VideoQuality::UltraHd,
+            VideoQualityCeiling::FullHd => VideoQuality::FullHd,
+            VideoQualityCeiling::High => VideoQuality::High,
+            VideoQualityCeiling::Medium => VideoQuality::Medium,
+            VideoQualityCeiling::Low => VideoQuality::Low,
+        }
+    }
+}
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum DownloadOption {
