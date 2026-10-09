@@ -1,6 +1,7 @@
-use crate::{cli, file_handler, log_error, parser, post_page};
+use crate::{cli, file_handler, log_error, log_warn, parser, post_page};
 use anyhow::Result;
-use boosty_api::media_content::ContentItem;
+use boosty_api::media_content::{self, ContentItem, VideoQuality};
+use boosty_api::model::{MediaData, PlayerUrl};
 use parser::ParsedText;
 use post_page::Block;
 use std::path::Path;
@@ -206,6 +207,95 @@ async fn download_and_push(
     cli::show_download_result(result, file_name, ctx.post_title);
     blocks.push(make_block(format!("{}{rel}", ctx.href_prefix)));
     Ok(())
+}
+
+const QUALITY_DESC: [(VideoQuality, &str); 5] = [
+    (VideoQuality::UltraHd, "ultra_hd"),
+    (VideoQuality::FullHd, "full_hd"),
+    (VideoQuality::High, "high"),
+    (VideoQuality::Medium, "medium"),
+    (VideoQuality::Low, "low"),
+];
+
+/// Warn when an OK.ru video is saved below the requested ceiling.
+pub fn log_ok_video_fallbacks(data: &[MediaData], max_quality: VideoQuality) {
+    for media in data {
+        log_media_quality(media, max_quality);
+    }
+}
+
+fn log_media_quality(media: &MediaData, max_quality: VideoQuality) {
+    match media {
+        MediaData::OkVideo(video) => {
+            log_one_ok_video(&video.player_urls, &video.title, &video.vid, max_quality);
+        }
+        MediaData::List(list) => {
+            for item in &list.items {
+                for child in &item.data {
+                    log_media_quality(child, max_quality);
+                }
+                for nested in &item.items {
+                    for child in &nested.data {
+                        log_media_quality(child, max_quality);
+                    }
+                }
+            }
+        }
+        _ => {}
+    }
+}
+
+fn log_one_ok_video(player_urls: &[PlayerUrl], title: &str, vid: &str, max_quality: VideoQuality) {
+    let Some(actual) = chosen_type(player_urls, max_quality) else {
+        return;
+    };
+    let requested = requested_type(max_quality);
+    if actual == requested {
+        return;
+    }
+    log_warn!(
+        "OK video '{title}' ({vid}): requested {} unavailable, using {}",
+        quality_label(requested),
+        quality_label(actual),
+    );
+}
+
+fn chosen_type<'a>(player_urls: &'a [PlayerUrl], max_quality: VideoQuality) -> Option<&'a str> {
+    let chosen = media_content::pick_video_quality(player_urls, max_quality)?;
+    for (quality, name) in QUALITY_DESC {
+        if quality > max_quality {
+            continue;
+        }
+        if player_urls
+            .iter()
+            .any(|url| url.type_ == name && url.url == chosen)
+        {
+            return Some(name);
+        }
+    }
+    player_urls
+        .iter()
+        .find(|url| url.url == chosen)
+        .map(|url| url.type_.as_str())
+}
+
+fn requested_type(max_quality: VideoQuality) -> &'static str {
+    QUALITY_DESC
+        .iter()
+        .find(|(quality, _)| *quality == max_quality)
+        .map(|(_, name)| *name)
+        .unwrap_or("ultra_hd")
+}
+
+fn quality_label(type_name: &str) -> &str {
+    match type_name {
+        "ultra_hd" => "Ultra HD",
+        "full_hd" => "Full HD",
+        "high" => "High",
+        "medium" => "Medium",
+        "low" => "Low",
+        other => other,
+    }
 }
 
 fn is_ordered_list(style: &str) -> bool {
