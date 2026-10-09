@@ -42,8 +42,14 @@ export default function DownloadedPage({
   setCurrentPage,
   active,
 }: DownloadedPageProps) {
-  const { isDownloading, downloadOptions, setDownloadOptions, cancelDownload } =
-    session;
+  const {
+    isDownloading,
+    downloadOptions,
+    setDownloadOptions,
+    videoQuality,
+    setVideoQuality,
+    cancelDownload,
+  } = session;
   const expandedBlogs = useDownloadedStore((state) => state.expandedBlogs);
   const setBlogExpanded = useDownloadedStore((state) => state.setBlogExpanded);
   const {
@@ -71,6 +77,8 @@ export default function DownloadedPage({
         <DownloadOptionsPanel
           value={downloadOptions}
           onChange={setDownloadOptions}
+          videoQuality={videoQuality}
+          onVideoQualityChange={setVideoQuality}
           disabled={isDownloading}
         />
       </div>

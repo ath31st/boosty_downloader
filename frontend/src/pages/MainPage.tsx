@@ -18,6 +18,8 @@ export default function MainPage({ session }: MainPageProps) {
     isDownloading,
     downloadOptions,
     setDownloadOptions,
+    videoQuality,
+    setVideoQuality,
     logs,
     progress,
     logsEndRef,
@@ -40,6 +42,8 @@ export default function MainPage({ session }: MainPageProps) {
         <DownloadOptionsPanel
           value={downloadOptions}
           onChange={setDownloadOptions}
+          videoQuality={videoQuality}
+          onVideoQualityChange={setVideoQuality}
           disabled={isDownloading}
         />
 
