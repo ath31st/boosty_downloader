@@ -10,6 +10,7 @@ export function useDownloadProcess(session: DownloadSession) {
   const {
     setDownloading,
     downloadOptions,
+    videoQuality,
     resetDownloadUi,
     resetProgress,
     cancelDownload,
@@ -52,6 +53,7 @@ export function useDownloadProcess(session: DownloadSession) {
         url: url.trim(),
         offsetUrl: offsetUrl.trim() !== '' ? offsetUrl : undefined,
         downloadOptions,
+        videoQuality,
       });
       toast.success('Загрузка завершена');
     } catch (e) {

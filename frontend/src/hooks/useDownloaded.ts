@@ -12,8 +12,13 @@ export function useDownloaded(
   setCurrentPage: (page: Page) => void,
   active: boolean,
 ) {
-  const { setDownloading, downloadOptions, resetDownloadUi, resetProgress } =
-    session;
+  const {
+    setDownloading,
+    downloadOptions,
+    videoQuality,
+    resetDownloadUi,
+    resetProgress,
+  } = session;
   const blogs = useDownloadedStore((state) => state.blogs);
   const loading = useDownloadedStore((state) => state.loading);
   const initialized = useDownloadedStore((state) => state.initialized);
@@ -113,6 +118,7 @@ export function useDownloaded(
         blog,
         postIds,
         downloadOptions,
+        videoQuality,
         force,
       })) as DownloadPostsResult;
       toastDownloadResult(result, okMessage);
