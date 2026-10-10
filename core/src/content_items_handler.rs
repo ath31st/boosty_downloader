@@ -260,7 +260,7 @@ fn log_one_ok_video(player_urls: &[PlayerUrl], title: &str, vid: &str, max_quali
     );
 }
 
-fn chosen_type<'a>(player_urls: &'a [PlayerUrl], max_quality: VideoQuality) -> Option<&'a str> {
+fn chosen_type(player_urls: &[PlayerUrl], max_quality: VideoQuality) -> Option<&str> {
     let chosen = media_content::pick_video_quality(player_urls, max_quality)?;
     for (quality, name) in QUALITY_DESC {
         if quality > max_quality {
