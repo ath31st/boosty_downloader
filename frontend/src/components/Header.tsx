@@ -5,6 +5,7 @@ import { HintIcon } from './HintIcon';
 import { isNewerVersion } from '@/utils/compareVersions';
 import type { Page } from '@/constants/pages';
 import { PageToggle } from './PageToggle';
+import { ThemeSwitch } from './ThemeSwitch';
 
 interface HeaderProps {
   currentPage: Page;
@@ -61,7 +62,8 @@ export function Header({
         Boosty Downloader
       </h1>
 
-      <div className="absolute top-0 right-4">
+      <div className="absolute top-0 right-4 flex items-center gap-3">
+        <ThemeSwitch />
         <PageToggle
           currentPage={currentPage}
           setCurrentPage={setCurrentPage}
