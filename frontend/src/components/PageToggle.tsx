@@ -25,6 +25,7 @@ export function PageToggle({
         <Button
           key={page}
           className="px-2"
+          variant="secondary"
           disabled={isDownloading || currentPage === page}
           onClick={() => setCurrentPage(page)}
         >
