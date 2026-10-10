@@ -39,8 +39,8 @@ export default function ConfigPage() {
   };
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-4 rounded-lg border border-(--border) bg-(--background) p-4 text-(--text)">
-      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto">
+    <div className="flex min-h-0 flex-1 flex-col rounded-lg border border-(--border) bg-(--background) text-(--text)">
+      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-4 py-4">
         <Label>
           <HintIcon text="Максимальное количество постов для загрузки за одну сессию" />
           <ConfigLabel label="Лимит постов:" />
@@ -163,30 +163,36 @@ export default function ConfigPage() {
         </Label>
       </div>
 
-      <div className="flex shrink-0 justify-center gap-3">
-        <Button
-          className="w-50"
-          onClick={handleSaveWithValidation}
-          disabled={isSaving}
-        >
-          {isSaving ? 'Сохраняем...' : 'Сохранить'}
-        </Button>
-        <Button className="w-50" onClick={handleClearAuth} disabled={isSaving}>
-          Очистить токены
-        </Button>
+      <div className="flex shrink-0 flex-col gap-4 px-4 pb-4">
+        <div className="flex justify-center gap-3">
+          <Button
+            className="w-50"
+            onClick={handleSaveWithValidation}
+            disabled={isSaving}
+          >
+            {isSaving ? 'Сохраняем...' : 'Сохранить'}
+          </Button>
+          <Button
+            className="w-50"
+            onClick={handleClearAuth}
+            disabled={isSaving}
+          >
+            Очистить токены
+          </Button>
+        </div>
+        <p className="text-center text-(--meta-text) text-sm">
+          Если приложение понравилось, поставьте{' '}
+          <a
+            href="https://github.com/ath31st/boosty_downloader"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline hover:text-(--text)"
+          >
+            звезду проекту на GitHub
+          </a>
+          . Это бесплатно.
+        </p>
       </div>
-      <p className="shrink-0 text-center text-(--meta-text) text-sm">
-        Если приложение понравилось, поставьте{' '}
-        <a
-          href="https://github.com/ath31st/boosty_downloader"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="underline hover:text-(--text)"
-        >
-          звезду проекту на GitHub
-        </a>
-        . Это бесплатно.
-      </p>
     </div>
   );
 }
