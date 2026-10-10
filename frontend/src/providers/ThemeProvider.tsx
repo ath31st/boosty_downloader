@@ -5,7 +5,7 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import type { Theme } from '../constants/themes';
+import { THEMES, type Theme } from '../constants/themes';
 
 interface ThemeContextType {
   theme: Theme;
@@ -14,11 +14,16 @@ interface ThemeContextType {
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
+function readSavedTheme(): Theme {
+  const saved = localStorage.getItem('data-theme');
+  if (saved && (THEMES as readonly string[]).includes(saved)) {
+    return saved as Theme;
+  }
+  return 'dark';
+}
+
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [theme, setTheme] = useState<Theme>(() => {
-    const saved = localStorage.getItem('data-theme') as Theme;
-    return saved || 'dark';
-  });
+  const [theme, setTheme] = useState<Theme>(readSavedTheme);
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
