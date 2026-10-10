@@ -12,39 +12,47 @@
 }
 
 [data-theme="dark"] {
-  --hue: 220;
+  color-scheme: dark;
 
-  --background: hsl(var(--hue), 30%, 10%);
-  --secondary-bg: hsl(var(--hue), 25%, 15%);
-  --text: hsl(var(--hue), 35%, 90%);
-  --meta-text: hsl(var(--hue), 15%, 60%);
-  --button-bg: hsl(var(--hue), 25%, 20%);
-  --button-text: hsl(var(--hue), 35%, 90%);
-  --button-hover-bg: hsl(var(--hue), 25%, 30%);
-  --border: hsl(var(--hue), 20%, 40%);
-  --tooltip-bg: hsl(var(--hue), 25%, 15%);
+  --background: #191919;
+  --secondary-bg: #262626;
+  --text: #f1f1f1;
+  --meta-text: #8c8c8c;
+  --button-bg: #f15f2c;
+  --button-text: #ffffff;
+  --button-hover-bg: #db440f;
+  --button-secondary-bg: rgba(255, 255, 255, 0.08);
+  --button-secondary-text: #eeeeee;
+  --button-secondary-hover-bg: #333333;
+  --border: #3c3c3c;
+  --tooltip-bg: #333333;
+  --accent: #f15f2c;
 
-  --error: hsl(0, 70%, 55%);
-  --warning: hsl(40, 80%, 60%);
-  --success: hsl(140, 50%, 50%);
+  --error: #f7402b;
+  --warning: #ef7729;
+  --success: #3dcc7a;
 }
 
-[data-theme="blue"] {
-  --hue: 220;
+[data-theme="light"] {
+  color-scheme: light;
 
-  --background: hsl(var(--hue), 30%, 10%);
-  --secondary-bg: hsl(var(--hue), 25%, 15%);
-  --text: hsl(var(--hue), 35%, 90%);
-  --meta-text: hsl(var(--hue), 40%, 55%);
-  --button-bg: hsl(var(--hue), 55%, 25%);
-  --button-text: hsl(var(--hue), 35%, 90%);
-  --button-hover-bg: hsl(var(--hue), 55%, 35%);
-  --border: hsl(var(--hue), 45%, 50%);
-  --tooltip-bg: hsl(var(--hue), 25%, 15%);
+  --background: #f6f6f6;
+  --secondary-bg: #ffffff;
+  --text: #242b2c;
+  --meta-text: #8c8c8c;
+  --button-bg: #f15f2c;
+  --button-text: #ffffff;
+  --button-hover-bg: #db440f;
+  --button-secondary-bg: #ffffff;
+  --button-secondary-text: #242b2c;
+  --button-secondary-hover-bg: #f7f7f7;
+  --border: #eaeaea;
+  --tooltip-bg: #ffffff;
+  --accent: #f15f2c;
 
-  --error: hsl(0, 70%, 55%);
-  --warning: hsl(40, 80%, 60%);
-  --success: hsl(140, 50%, 50%);
+  --error: #cd3544;
+  --warning: #db440f;
+  --success: #178a45;
 }
 
 html,
