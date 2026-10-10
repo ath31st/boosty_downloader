@@ -20,7 +20,7 @@ export function HintIcon({ text, size = 14 }: HintIconProps) {
         <Tooltip.Portal>
           <Tooltip.Content
             side="right"
-            className="z-50 max-w-[350px] rounded-lg bg-(--tooltip-bg) px-2 py-1 text-sm"
+            className="z-50 max-w-[350px] rounded-lg border border-(--border) bg-(--tooltip-bg) px-2 py-1 text-(--text) text-sm shadow-md"
           >
             {text}
             <Tooltip.Arrow className="fill-(--tooltip-bg)" />

@@ -66,7 +66,7 @@ export default function ConfigPage() {
                   href="https://github.com/ath31st/boosty_downloader?tab=readme-ov-file#где-взять-токены"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-(--button-text) underline hover:text-(--button-hover-bg)"
+                  className="text-(--accent) underline hover:text-(--button-hover-bg)"
                 >
                   Инструкция, как достать токен на GitHub
                 </a>
