@@ -46,6 +46,7 @@ pub fn read_input_menu() -> i8 {
         "Toggle comments download",
         "Show API client headers",
         "Show config",
+        "Help",
         "Exit",
     ];
 
@@ -57,7 +58,7 @@ pub fn read_input_menu() -> i8 {
 
     match selection {
         Ok(Some(index)) => (index) as i8,
-        _ => 11,
+        _ => 12,
     }
 }
 
