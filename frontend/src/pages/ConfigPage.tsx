@@ -147,7 +147,7 @@ export default function ConfigPage() {
               value={config.download_path ?? ''}
               onChange={(e) => handleChange('download_path', e)}
               className="flex-1"
-              placeholder="По умолчанию: папка с приложением"
+              placeholder="По умолчанию: Загрузки/boosty-downloader"
             />
             <Button className="px-3" onClick={handleSelectDirectory}>
               <FolderOpen size={16} />

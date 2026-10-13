@@ -19,7 +19,7 @@ pub const ENTER_REFRESH_TOKEN: &str = "Enter refresh token:";
 pub const ENTER_CLIENT_ID: &str = "Enter client id:";
 pub const ENTER_POSTS_LIMIT: &str = "Enter posts limit:";
 pub const ENTER_DOWNLOAD_PATH: &str =
-    "Enter download path (or press enter to use default - binary folder):";
+    "Enter download path (or press enter to use default - Downloads/boosty-downloader):";
 
 pub fn info(msg: &str) {
     println!("\x1b[34mInfo:\x1b[0m {msg}");
@@ -127,7 +127,7 @@ pub fn read_posts_limit(current_limit: usize) -> Option<usize> {
 }
 
 pub fn read_download_path(current_path: Option<&str>) -> Option<Option<String>> {
-    let default_display = current_path.unwrap_or("(default - binary folder)");
+    let default_display = current_path.unwrap_or("(default - Downloads/boosty-downloader)");
     let prompt = format!("{} (current: {})", ENTER_DOWNLOAD_PATH, default_display);
 
     let result: Result<String, _> = Input::with_theme(&ColorfulTheme::default())
@@ -315,7 +315,7 @@ pub fn show_config(config: &crate::config::AppConfig) {
         config
             .download_path
             .as_deref()
-            .unwrap_or("(default - binary folder)")
+            .unwrap_or("(default - Downloads/boosty-downloader)")
     );
 }
 
