@@ -340,6 +340,50 @@ pub fn error_while_loading_config(e: &Error) {
     warning("Config will be reset to default");
 }
 
+pub fn print_help() {
+    println!("{HELP_TEXT}");
+}
+
+const HELP_TEXT: &str = "\
+boosty_downloader_cli
+
+Interactive downloader. Pick an action from the menu.
+Run with -h or --help to print this text and exit.
+
+Auth
+  An access token is enough for most downloads. In the browser, open boosty.to,
+  then F12 -> Application -> Local Storage -> https://boosty.to. Copy the access
+  token from the auth value, without quotes.
+  A refresh token from the same auth value plus the device ID (_clientId) lets
+  the app refresh the access token. Using refresh can log you out of Boosty in
+  the browser.
+
+URLs
+  Blog:   https://boosty.to/{blog}
+  Post:   https://boosty.to/{blog}/posts/{id}
+  Bundle: https://boosty.to/{blog}/bundle/{id}
+  Offset is an optional post URL and applies only to a blog feed: download
+  starts from that post. The posts limit (default 100) caps a blog feed, a
+  bundle, and Check blog.
+
+Files
+  Saved to Downloads/boosty-downloader unless another path is set.
+  Config: ~/.config/boosty-downloader/config.json
+          %APPDATA%\\boosty-downloader\\config.json
+  Each post has an index.html. Do not rename post folders or .boosty.json.
+
+Downloaded
+  Check blog first. Download new posts works only after a check.
+  Download / resume post fills in missing content. Redownload post clears the
+  post folder and downloads it again. That is also how to change the quality
+  of a video that is already saved.
+
+Notes
+  A paid post without access is skipped. Audio and attached files need a token
+  even on a free post. Video quality is asked before each download (default
+  Ultra HD) and does not replace files that are already saved.
+";
+
 pub fn print_error(e: &Error) {
     if cfg!(debug_assertions) {
         for cause in e.chain() {
