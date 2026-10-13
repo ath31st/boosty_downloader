@@ -69,6 +69,28 @@ fn user_config_dir() -> Result<PathBuf> {
     }
 }
 
+fn user_downloads_dir() -> PathBuf {
+    #[cfg(target_os = "windows")]
+    {
+        return env::var_os("USERPROFILE")
+            .map(|home| PathBuf::from(home).join("Downloads"))
+            .unwrap_or_else(|| PathBuf::from("Downloads"));
+    }
+
+    #[cfg(not(target_os = "windows"))]
+    {
+        if let Some(xdg) = env::var_os("XDG_DOWNLOAD_DIR") {
+            if !xdg.is_empty() {
+                return PathBuf::from(xdg);
+            }
+        }
+
+        env::var_os("HOME")
+            .map(|home| PathBuf::from(home).join("Downloads"))
+            .unwrap_or_else(|| PathBuf::from("Downloads"))
+    }
+}
+
 fn config_path() -> Result<PathBuf> {
     Ok(user_config_dir()?.join(APP_DIR_NAME).join(CONFIG_FILE_NAME))
 }
@@ -174,10 +196,7 @@ async fn reset_config(path: &Path) -> Result<AppConfig> {
 pub fn get_download_path(config: &AppConfig) -> PathBuf {
     match &config.download_path {
         Some(path) => PathBuf::from(path),
-        None => {
-            let exe = env::current_exe().unwrap_or_else(|_| PathBuf::from("."));
-            exe.parent().unwrap_or_else(|| Path::new(".")).to_path_buf()
-        }
+        None => user_downloads_dir().join(APP_DIR_NAME),
     }
 }
 
