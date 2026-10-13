@@ -46,15 +46,85 @@ impl Default for AppConfig {
     }
 }
 
+const APP_DIR_NAME: &str = "boosty-downloader";
+const CONFIG_FILE_NAME: &str = "config.json";
+
+fn user_config_dir() -> Result<PathBuf> {
+    #[cfg(target_os = "windows")]
+    {
+        let appdata = env::var_os("APPDATA").context("APPDATA is not set")?;
+        return Ok(PathBuf::from(appdata));
+    }
+
+    #[cfg(not(target_os = "windows"))]
+    {
+        if let Some(xdg) = env::var_os("XDG_CONFIG_HOME") {
+            if !xdg.is_empty() {
+                return Ok(PathBuf::from(xdg));
+            }
+        }
+
+        let home = env::var_os("HOME").context("HOME is not set")?;
+        Ok(PathBuf::from(home).join(".config"))
+    }
+}
+
 fn config_path() -> Result<PathBuf> {
-    let exe = std::env::current_exe().with_context(|| "Failed to get current executable path")?;
+    Ok(user_config_dir()?.join(APP_DIR_NAME).join(CONFIG_FILE_NAME))
+}
+
+/// Old location: `config.json` next to the executable.
+///
+/// Temporary migration for installs that stored the file beside the binary.
+/// Remove once those copies have moved to [`config_path`].
+fn legacy_config_path() -> Result<PathBuf> {
+    let exe = env::current_exe().with_context(|| "Failed to get current executable path")?;
     let dir = exe.parent().context("Failed to get executable directory")?;
 
-    Ok(dir.join("config.json"))
+    Ok(dir.join(CONFIG_FILE_NAME))
+}
+
+async fn ensure_parent_dir(path: &Path) -> Result<()> {
+    if let Some(parent) = path.parent() {
+        fs::create_dir_all(parent)
+            .await
+            .with_context(|| format!("Failed to create directory '{}'", parent.display()))?;
+    }
+
+    Ok(())
+}
+
+async fn migrate_legacy_config(dest: &Path) -> Result<()> {
+    let legacy = legacy_config_path()?;
+    if legacy == dest || !fs::try_exists(&legacy).await? || fs::try_exists(dest).await? {
+        return Ok(());
+    }
+
+    ensure_parent_dir(dest).await?;
+
+    if fs::rename(&legacy, dest).await.is_err() {
+        fs::copy(&legacy, dest).await.with_context(|| {
+            format!(
+                "Failed to copy config from '{}' to '{}'",
+                legacy.display(),
+                dest.display()
+            )
+        })?;
+        let _ = fs::remove_file(&legacy).await;
+    }
+
+    crate::log_info!(
+        "Moved config from '{}' to '{}'",
+        legacy.display(),
+        dest.display()
+    );
+
+    Ok(())
 }
 
 pub async fn load_config() -> Result<AppConfig> {
     let path = config_path()?;
+    migrate_legacy_config(&path).await?;
 
     if !fs::try_exists(&path).await? {
         let default = AppConfig::default();
@@ -83,6 +153,7 @@ pub async fn load_config() -> Result<AppConfig> {
 
 pub async fn save_config(config: &AppConfig) -> Result<()> {
     let path = config_path()?;
+    ensure_parent_dir(&path).await?;
     let data = serde_json::to_vec_pretty(config).with_context(|| "Failed to serialize config")?;
 
     fs::write(&path, data)
