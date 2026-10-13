@@ -17,7 +17,7 @@ pub(crate) mod post_page;
 pub(crate) mod progress_reporter;
 pub(crate) mod url_context;
 
-pub use cli::print_error;
+pub use cli::{print_error, print_help};
 pub use config::{
     AppConfig, CommentsConfig, clear_auth, get_download_path, load_config, save_config, sync_auth,
 };

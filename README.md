@@ -86,7 +86,7 @@ Boosty Downloader — portable приложение для загрузки ко
            ./boosty_downloader_cli-x.x.x-linux-x86_64
            ```
 
-   В CLI пункт **Manage downloaded content** — третья строка главного меню (сразу после загрузки по URL и из файла).
+   В CLI пункт **Manage downloaded content** — третья строка главного меню (сразу после загрузки по URL и из файла). Справка: пункт **Help** или `boosty_downloader_cli --help`.
 
 ## Самостоятельная сборка приложения из исходников
 
