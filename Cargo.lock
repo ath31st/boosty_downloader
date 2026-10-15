@@ -316,7 +316,7 @@ dependencies = [
 
 [[package]]
 name = "boosty_downloader_core"
-version = "0.19.0"
+version = "0.20.0"
 dependencies = [
  "anyhow",
  "boosty_api",
@@ -335,7 +335,7 @@ dependencies = [
 
 [[package]]
 name = "boosty_downloader_gui"
-version = "0.19.0"
+version = "0.20.0"
 dependencies = [
  "anyhow",
  "boosty_api",
