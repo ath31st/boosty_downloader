@@ -104,48 +104,51 @@ async fn process(
     let comments_folder_path = file_handler::prepare_folder_path_for_comments(&page.folder).await?;
 
     let mut comments = Vec::new();
-    for comment in cr.comments.iter().filter(|c| !c.not_available()) {
-        collect_comment_views(
-            comment,
-            0,
-            &page.title,
-            &comments_folder_path,
-            &download_options,
+    {
+        let ctx = CommentCollectCtx {
+            post_title: &page.title,
+            comments_folder_path: &comments_folder_path,
+            download_options: &download_options,
             video_quality,
             cancel_token,
-            &mut comments,
-        )
-        .await?;
+        };
+        for comment in cr.comments.iter().filter(|c| !c.not_available()) {
+            collect_comment_views(comment, 0, &ctx, &mut comments).await?;
+        }
     }
 
     page.comments = comments;
     Ok(())
 }
 
+struct CommentCollectCtx<'a> {
+    post_title: &'a str,
+    comments_folder_path: &'a Path,
+    download_options: &'a DownloadOptions,
+    video_quality: VideoQuality,
+    cancel_token: &'a CancellationToken,
+}
+
 async fn collect_comment_views(
     comment: &Comment,
     level: u8,
-    post_title: &str,
-    comments_folder_path: &Path,
-    download_options: &DownloadOptions,
-    video_quality: VideoQuality,
-    cancel_token: &CancellationToken,
+    ctx: &CommentCollectCtx<'_>,
     out: &mut Vec<CommentView>,
 ) -> Result<()> {
-    crate::ensure_not_cancelled(cancel_token)?;
+    crate::ensure_not_cancelled(ctx.cancel_token)?;
 
-    if download_options.contains(&DownloadOption::Video) {
-        content_items_handler::log_ok_video_fallbacks(&comment.data, video_quality);
+    if ctx.download_options.contains(&DownloadOption::Video) {
+        content_items_handler::log_ok_video_fallbacks(&comment.data, ctx.video_quality);
     }
-    let items = comment.extract_content_with_video_quality(video_quality);
-    let filtered = download_options::filter_content_items(items, download_options);
+    let items = comment.extract_content_with_video_quality(ctx.video_quality);
+    let filtered = download_options::filter_content_items(items, ctx.download_options);
     let blocks = content_items_handler::process_content_items(
         filtered,
-        post_title,
-        comments_folder_path,
+        ctx.post_title,
+        ctx.comments_folder_path,
         "comments/",
         None,
-        cancel_token,
+        ctx.cancel_token,
     )
     .await?;
 
@@ -161,11 +164,7 @@ async fn collect_comment_views(
             Box::pin(collect_comment_views(
                 reply,
                 level.saturating_add(1),
-                post_title,
-                comments_folder_path,
-                download_options,
-                video_quality,
-                cancel_token,
+                ctx,
                 out,
             ))
             .await?;
