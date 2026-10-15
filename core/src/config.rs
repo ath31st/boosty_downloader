@@ -58,10 +58,10 @@ fn user_config_dir() -> Result<PathBuf> {
 
     #[cfg(not(target_os = "windows"))]
     {
-        if let Some(xdg) = env::var_os("XDG_CONFIG_HOME") {
-            if !xdg.is_empty() {
-                return Ok(PathBuf::from(xdg));
-            }
+        if let Some(xdg) = env::var_os("XDG_CONFIG_HOME")
+            && !xdg.is_empty()
+        {
+            return Ok(PathBuf::from(xdg));
         }
 
         let home = env::var_os("HOME").context("HOME is not set")?;
@@ -79,10 +79,10 @@ fn user_downloads_dir() -> PathBuf {
 
     #[cfg(not(target_os = "windows"))]
     {
-        if let Some(xdg) = env::var_os("XDG_DOWNLOAD_DIR") {
-            if !xdg.is_empty() {
-                return PathBuf::from(xdg);
-            }
+        if let Some(xdg) = env::var_os("XDG_DOWNLOAD_DIR")
+            && !xdg.is_empty()
+        {
+            return PathBuf::from(xdg);
         }
 
         env::var_os("HOME")
