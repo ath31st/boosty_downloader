@@ -71,6 +71,13 @@ pub struct DownloadPostsResult {
     pub skipped: u32,
 }
 
+#[derive(Debug, Clone)]
+pub struct DownloadPostsParams {
+    pub download_options: DownloadOptions,
+    pub video_quality: VideoQuality,
+    pub force: bool,
+}
+
 fn is_paid_post(post: &Post) -> bool {
     post.price > 0.0
 }
@@ -205,16 +212,14 @@ pub async fn download_posts(
     cfg: &AppConfig,
     blog: &str,
     post_ids: &[String],
-    download_options: DownloadOptions,
-    video_quality: VideoQuality,
-    force: bool,
+    params: DownloadPostsParams,
     cancel_token: &CancellationToken,
 ) -> Result<DownloadPostsResult> {
     let download_path = get_download_path(cfg);
     let mut result = DownloadPostsResult::default();
     for post_id in post_ids {
         crate::ensure_not_cancelled(cancel_token)?;
-        if force
+        if params.force
             && let Some(folder) =
                 blog_index::resolve_post_folder(&download_path, blog, post_id).await?
         {
@@ -228,8 +233,8 @@ pub async fn download_posts(
                 post_id: post_id.clone(),
             },
             None,
-            download_options.clone(),
-            video_quality,
+            params.download_options.clone(),
+            params.video_quality,
             cancel_token,
         )
         .await

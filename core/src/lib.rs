@@ -27,7 +27,7 @@ pub use download_options::{
     filter_content_items,
 };
 pub use downloaded::{
-    BlogSnapshot, DownloadPostsResult, PostSnapshot, PostSyncStatus,
+    BlogSnapshot, DownloadPostsParams, DownloadPostsResult, PostSnapshot, PostSyncStatus,
     delete_blog as delete_downloaded_blog, delete_post as delete_downloaded_post,
     download_posts as download_downloaded_posts, refresh_blog as refresh_downloaded_blog,
     scan as scan_downloaded,

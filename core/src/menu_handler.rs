@@ -400,9 +400,11 @@ async fn handle_downloaded_blog(client: &ApiClient, cfg: &AppConfig, blog: &str)
                         cfg,
                         blog,
                         &ids,
-                        options,
-                        video_quality.into(),
-                        false,
+                        downloaded::DownloadPostsParams {
+                            download_options: options,
+                            video_quality: video_quality.into(),
+                            force: false,
+                        },
                         &CancellationToken::new(),
                     )
                     .await
@@ -504,9 +506,11 @@ async fn download_selected_post(
         cfg,
         blog,
         std::slice::from_ref(&post.post_id),
-        options,
-        video_quality.into(),
-        force,
+        downloaded::DownloadPostsParams {
+            download_options: options,
+            video_quality: video_quality.into(),
+            force,
+        },
         &CancellationToken::new(),
     )
     .await

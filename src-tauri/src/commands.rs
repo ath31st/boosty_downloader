@@ -2,8 +2,8 @@ use std::sync::Arc;
 
 use boosty_api::api_client::ApiClient;
 use boosty_downloader_core::{
-    AppConfig, BlogSnapshot, DownloadOptions, DownloadPostsResult, VideoQualityCeiling, log_error,
-    log_info, scan_downloaded,
+    AppConfig, BlogSnapshot, DownloadOptions, DownloadPostsParams, DownloadPostsResult,
+    VideoQualityCeiling, log_error, log_info, scan_downloaded,
 };
 use tauri::State;
 use tokio::sync::Mutex;
@@ -192,9 +192,11 @@ pub async fn download_downloaded_posts(
         &cfg,
         &blog,
         &post_ids,
-        download_options,
-        video_quality.into(),
-        force,
+        DownloadPostsParams {
+            download_options,
+            video_quality: video_quality.into(),
+            force,
+        },
         &token,
     )
     .await;
