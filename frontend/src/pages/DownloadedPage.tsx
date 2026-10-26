@@ -4,7 +4,11 @@ import { useDownloaded } from '@/hooks/useDownloaded';
 import type { DownloadSession } from '@/hooks/useDownloadingContent';
 import type { Page } from '@/constants/pages';
 import { useDownloadedStore } from '@/store/downloaded';
-import { STATUS_LABEL, type PostSyncStatus } from '@/types/downloaded';
+import {
+  STATUS_LABEL,
+  type PostSnapshot,
+  type PostSyncStatus,
+} from '@/types/downloaded';
 import { openPath } from '@tauri-apps/plugin-opener';
 import {
   Banknote,
@@ -19,6 +23,25 @@ interface DownloadedPageProps {
   session: DownloadSession;
   setCurrentPage: (page: Page) => void;
   active: boolean;
+}
+
+function countPhrase(count: number, one: string, many: string): string {
+  const mod10 = count % 10;
+  const mod100 = count % 100;
+  const word = mod10 === 1 && mod100 !== 11 ? one : many;
+  return `${count} ${word}`;
+}
+
+function blogStatusSummary(posts: PostSnapshot[]): string | null {
+  const fresh = posts.filter((post) => post.status === 'new').length;
+  const updated = posts.filter((post) => post.status === 'updated').length;
+  const partial = posts.filter((post) => post.status === 'partial').length;
+  const parts = [
+    fresh > 0 ? countPhrase(fresh, 'новый', 'новых') : null,
+    updated > 0 ? countPhrase(updated, 'изменённый', 'изменённых') : null,
+    partial > 0 ? `${partial} можно докачать` : null,
+  ].filter((part): part is string => part !== null);
+  return parts.length > 0 ? parts.join(' · ') : null;
 }
 
 function statusClass(status: PostSyncStatus): string {
@@ -58,6 +81,8 @@ export default function DownloadedPage({
     checking,
     refreshBlog,
     downloadNew,
+    downloadUpdated,
+    downloadPartial,
     downloadPost,
     deletePost,
     deleteBlog,
@@ -92,144 +117,174 @@ export default function DownloadedPage({
             </p>
           </div>
         ) : (
-          blogs.map((blog) => (
-            <details
-              key={blog.blog}
-              className="rounded-lg border border-(--border) bg-(--secondary-bg) p-3"
-              open={expandedBlogs.includes(blog.blog)}
-              onToggle={(event) => {
-                const open = event.currentTarget.open;
-                if (open !== expandedBlogs.includes(blog.blog)) {
-                  setBlogExpanded(blog.blog, open);
-                }
-              }}
-            >
-              <summary className="cursor-pointer font-medium">
-                {blog.blog}
-              </summary>
-              <div className="mt-3 flex flex-wrap gap-2">
-                <Button
-                  disabled={isDownloading}
-                  onClick={() => refreshBlog(blog.blog)}
-                >
-                  <div className="flex items-center gap-2">
-                    <RefreshCw size={16} />
-                    Проверить
-                  </div>
-                </Button>
-                {blog.posts.some((p) => p.status === 'new') && (
+          blogs.map((blog) => {
+            const statusSummary = blogStatusSummary(blog.posts);
+            return (
+              <details
+                key={blog.blog}
+                className="rounded-lg border border-(--border) bg-(--secondary-bg) p-3"
+                open={expandedBlogs.includes(blog.blog)}
+                onToggle={(event) => {
+                  const open = event.currentTarget.open;
+                  if (open !== expandedBlogs.includes(blog.blog)) {
+                    setBlogExpanded(blog.blog, open);
+                  }
+                }}
+              >
+                <summary className="cursor-pointer font-medium">
+                  <span>{blog.blog}</span>
+                  {statusSummary && (
+                    <span className="ml-2 font-normal text-(--warning) text-sm">
+                      {statusSummary}
+                    </span>
+                  )}
+                </summary>
+                <div className="mt-3 flex flex-wrap gap-2">
                   <Button
-                    disabled={isDownloading || downloadOptions.length === 0}
-                    onClick={() => downloadNew(blog.blog)}
+                    disabled={isDownloading}
+                    onClick={() => refreshBlog(blog.blog)}
                   >
                     <div className="flex items-center gap-2">
-                      <DownloadIcon size={16} />
-                      Скачать новое
+                      <RefreshCw size={16} />
+                      Проверить
                     </div>
                   </Button>
-                )}
-                <Button
-                  disabled={isDownloading}
-                  onClick={() => deleteBlog(blog.blog)}
-                >
-                  <div className="flex items-center gap-2">
-                    <Trash2 size={16} />
-                    Удалить блог
-                  </div>
-                </Button>
-              </div>
-
-              <ul className="mt-3 flex flex-col gap-2">
-                {blog.posts.length === 0 && (
-                  <li className="text-(--meta-text) text-sm">Нет постов</li>
-                )}
-                {blog.posts.map((post) => (
-                  <li
-                    key={post.post_id}
-                    className="flex flex-col gap-2 rounded-md border border-(--border) p-2 sm:flex-row sm:items-center sm:justify-between"
+                  {blog.posts.some((p) => p.status === 'new') && (
+                    <Button
+                      disabled={isDownloading || downloadOptions.length === 0}
+                      onClick={() => downloadNew(blog.blog)}
+                    >
+                      <div className="flex items-center gap-2">
+                        <DownloadIcon size={16} />
+                        Скачать новое
+                      </div>
+                    </Button>
+                  )}
+                  {blog.posts.some((p) => p.status === 'updated') && (
+                    <Button
+                      disabled={isDownloading || downloadOptions.length === 0}
+                      onClick={() => downloadUpdated(blog.blog)}
+                    >
+                      <div className="flex items-center gap-2">
+                        <DownloadIcon size={16} />
+                        Перекачать изменённые
+                      </div>
+                    </Button>
+                  )}
+                  {blog.posts.some((p) => p.status === 'partial') && (
+                    <Button
+                      disabled={isDownloading || downloadOptions.length === 0}
+                      onClick={() => downloadPartial(blog.blog)}
+                    >
+                      <div className="flex items-center gap-2">
+                        <DownloadIcon size={16} />
+                        Докачать недостающее
+                      </div>
+                    </Button>
+                  )}
+                  <Button
+                    disabled={isDownloading}
+                    onClick={() => deleteBlog(blog.blog)}
                   >
-                    <div className="min-w-0">
-                      <p className="flex items-center gap-1.5 truncate">
-                        <span className="truncate">{post.title}</span>
-                        {post.is_paid && (
-                          <span title="Платный пост" className="shrink-0">
-                            <Banknote
-                              size={16}
-                              className="text-(--warning)"
-                              aria-hidden
-                            />
-                            <span className="sr-only">Платный пост</span>
-                          </span>
+                    <div className="flex items-center gap-2">
+                      <Trash2 size={16} />
+                      Удалить блог
+                    </div>
+                  </Button>
+                </div>
+
+                <ul className="mt-3 flex flex-col gap-2">
+                  {blog.posts.length === 0 && (
+                    <li className="text-(--meta-text) text-sm">Нет постов</li>
+                  )}
+                  {blog.posts.map((post) => (
+                    <li
+                      key={post.post_id}
+                      className="flex flex-col gap-2 rounded-md border border-(--border) p-2 sm:flex-row sm:items-center sm:justify-between"
+                    >
+                      <div className="min-w-0">
+                        <p className="flex items-center gap-1.5 truncate">
+                          <span className="truncate">{post.title}</span>
+                          {post.is_paid && (
+                            <span title="Платный пост" className="shrink-0">
+                              <Banknote
+                                size={16}
+                                className="text-(--warning)"
+                                aria-hidden
+                              />
+                              <span className="sr-only">Платный пост</span>
+                            </span>
+                          )}
+                        </p>
+                        <p className={`text-sm ${statusClass(post.status)}`}>
+                          {STATUS_LABEL[post.status]}
+                        </p>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {post.status === 'partial' && (
+                          <Button
+                            className="px-2 py-1 text-sm"
+                            disabled={
+                              isDownloading || downloadOptions.length === 0
+                            }
+                            onClick={() =>
+                              downloadPost(blog.blog, post.post_id, false)
+                            }
+                          >
+                            Докачать
+                          </Button>
                         )}
-                      </p>
-                      <p className={`text-sm ${statusClass(post.status)}`}>
-                        {STATUS_LABEL[post.status]}
-                      </p>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      {post.status === 'partial' && (
-                        <Button
-                          className="px-2 py-1 text-sm"
-                          disabled={
-                            isDownloading || downloadOptions.length === 0
-                          }
-                          onClick={() =>
-                            downloadPost(blog.blog, post.post_id, false)
-                          }
-                        >
-                          Докачать
-                        </Button>
-                      )}
-                      {post.folder_path && (
-                        <Button
-                          className="px-2 py-1 text-sm"
-                          disabled={isDownloading}
-                          onClick={() =>
-                            downloadPost(blog.blog, post.post_id, true)
-                          }
-                        >
-                          Перекачать
-                        </Button>
-                      )}
-                      {post.folder_path && (
-                        <Button
-                          className="px-2"
-                          disabled={isDownloading}
-                          onClick={() => openPath(post.folder_path)}
-                        >
-                          <FolderOpen size={16} />
-                        </Button>
-                      )}
-                      {post.folder_path && (
-                        <Button
-                          className="px-2"
-                          disabled={isDownloading}
-                          onClick={() =>
-                            deletePost(blog.blog, post.post_id, post.title)
-                          }
-                        >
-                          <Trash2 size={16} />
-                        </Button>
-                      )}
-                      {post.status === 'new' && (
-                        <Button
-                          className="px-2 py-1 text-sm"
-                          disabled={
-                            isDownloading || downloadOptions.length === 0
-                          }
-                          onClick={() =>
-                            downloadPost(blog.blog, post.post_id, false)
-                          }
-                        >
-                          Скачать
-                        </Button>
-                      )}
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            </details>
-          ))
+                        {post.folder_path && (
+                          <Button
+                            className="px-2 py-1 text-sm"
+                            disabled={isDownloading}
+                            onClick={() =>
+                              downloadPost(blog.blog, post.post_id, true)
+                            }
+                          >
+                            Перекачать
+                          </Button>
+                        )}
+                        {post.folder_path && (
+                          <Button
+                            className="px-2"
+                            disabled={isDownloading}
+                            onClick={() => openPath(post.folder_path)}
+                          >
+                            <FolderOpen size={16} />
+                          </Button>
+                        )}
+                        {post.folder_path && (
+                          <Button
+                            className="px-2"
+                            disabled={isDownloading}
+                            onClick={() =>
+                              deletePost(blog.blog, post.post_id, post.title)
+                            }
+                          >
+                            <Trash2 size={16} />
+                          </Button>
+                        )}
+                        {post.status === 'new' && (
+                          <Button
+                            className="px-2 py-1 text-sm"
+                            disabled={
+                              isDownloading || downloadOptions.length === 0
+                            }
+                            onClick={() =>
+                              downloadPost(blog.blog, post.post_id, false)
+                            }
+                          >
+                            Скачать
+                          </Button>
+                        )}
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </details>
+            );
+          })
         )}
       </div>
 

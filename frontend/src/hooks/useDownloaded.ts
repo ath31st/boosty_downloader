@@ -1,7 +1,12 @@
 import { useCallback, useEffect, useState } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { toast } from 'sonner';
-import type { BlogSnapshot, DownloadPostsResult } from '@/types/downloaded';
+import type {
+  BlogSnapshot,
+  DownloadPostsResult,
+  PostSnapshot,
+  PostSyncStatus,
+} from '@/types/downloaded';
 import type { DownloadSession } from '@/hooks/useDownloadingContent';
 import type { Page } from '@/constants/pages';
 import { useDownloadedStore } from '@/store/downloaded';
@@ -141,14 +146,43 @@ export function useDownloaded(
     }
   };
 
-  const downloadNew = async (blog: string) => {
-    const current = useDownloadedStore
+  const postsWithStatus = (
+    blog: string,
+    status: PostSyncStatus,
+  ): PostSnapshot[] =>
+    useDownloadedStore
       .getState()
-      .blogs.find((item) => item.blog === blog);
-    const ids =
-      current?.posts.filter((p) => p.status === 'new').map((p) => p.post_id) ??
-      [];
+      .blogs.find((item) => item.blog === blog)
+      ?.posts.filter((post) => post.status === status) ?? [];
+
+  const downloadNew = async (blog: string) => {
+    const ids = postsWithStatus(blog, 'new').map((post) => post.post_id);
     await runDownload(blog, ids, false, 'Новые посты скачаны');
+  };
+
+  const downloadUpdated = async (blog: string) => {
+    const posts = postsWithStatus(blog, 'updated');
+    if (posts.length === 0) {
+      toast.info('Нет постов для загрузки');
+      return;
+    }
+    const message =
+      posts.length === 1
+        ? `Перекачать пост «${posts[0].title}»? Текущие файлы будут удалены. Качество видео берётся из панели.`
+        : `Перекачать ${posts.length} изменённых постов? Текущие файлы этих постов будут удалены. Качество видео берётся из панели.`;
+    const ok = await confirmAction(message, 'Перекачать изменённые');
+    if (!ok) return;
+    await runDownload(
+      blog,
+      posts.map((post) => post.post_id),
+      true,
+      posts.length === 1 ? 'Пост перекачан' : 'Изменённые посты перекачаны',
+    );
+  };
+
+  const downloadPartial = async (blog: string) => {
+    const ids = postsWithStatus(blog, 'partial').map((post) => post.post_id);
+    await runDownload(blog, ids, false, 'Недостающее докачано');
   };
 
   const downloadPost = async (blog: string, postId: string, force: boolean) => {
@@ -206,6 +240,8 @@ export function useDownloaded(
     checking,
     refreshBlog,
     downloadNew,
+    downloadUpdated,
+    downloadPartial,
     downloadPost,
     deletePost,
     deleteBlog,
