@@ -374,7 +374,9 @@ Files
   Each post has an index.html. Do not rename post folders or .boosty.json.
 
 Downloaded
-  Check blog first. Download new posts works only after a check.
+  Check blog first. Download new posts, redownload updated posts, and download
+  missing content work only after a check. Redownload updated posts clears
+  those post folders and downloads them again.
   Download / resume post fills in missing content. Redownload post clears the
   post folder and downloads it again. That is also how to change the quality
   of a video that is already saved.
@@ -400,6 +402,8 @@ pub fn read_downloaded_blog_action() -> i8 {
         "Check blog",
         "Show posts",
         "Download new posts",
+        "Redownload updated posts",
+        "Download missing content",
         "Download / resume post",
         "Redownload post",
         "Delete post",
@@ -413,7 +417,7 @@ pub fn read_downloaded_blog_action() -> i8 {
         .interact_opt();
     match selection {
         Ok(Some(index)) => index as i8,
-        _ => 7,
+        _ => 9,
     }
 }
 
@@ -455,6 +459,14 @@ pub fn select_post_index(labels: &[String]) -> Option<usize> {
     } else {
         Some(selection)
     }
+}
+
+pub fn confirm(prompt: &str) -> bool {
+    Confirm::with_theme(&ColorfulTheme::default())
+        .with_prompt(prompt)
+        .default(false)
+        .interact()
+        .unwrap_or(false)
 }
 
 pub fn confirm_delete(what: &str) -> bool {

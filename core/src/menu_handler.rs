@@ -378,61 +378,48 @@ async fn handle_downloaded_blog(client: &ApiClient, cfg: &AppConfig, blog: &str)
                 }
             }
             2 => {
-                let Some(current) = snapshot.as_ref() else {
-                    cli::info("Check the blog first.");
-                    continue;
-                };
-                let ids: Vec<String> = current
-                    .posts
-                    .iter()
-                    .filter(|p| p.status == downloaded::PostSyncStatus::New)
-                    .map(|p| p.post_id.clone())
-                    .collect();
-                if ids.is_empty() {
-                    cli::info("No new accessible posts. Check the blog first.");
-                    continue;
-                }
-                if let Some(options) = cli::read_download_options()
-                    && let Some(video_quality) = cli::read_video_quality()
-                {
-                    match downloaded::download_posts(
-                        client,
-                        cfg,
-                        blog,
-                        &ids,
-                        downloaded::DownloadPostsParams {
-                            download_options: options,
-                            video_quality: video_quality.into(),
-                            force: false,
-                        },
-                        &CancellationToken::new(),
-                    )
-                    .await
-                    {
-                        Ok(result) => {
-                            cli::print_download_posts_result(&result);
-                            if let Ok(updated) = downloaded::refresh_blog(
-                                client,
-                                cfg,
-                                blog,
-                                &CancellationToken::new(),
-                            )
-                            .await
-                            {
-                                snapshot = Some(updated);
-                            }
-                        }
-                        Err(e) => log_error!("{:#}", e),
-                    }
-                }
+                download_snapshot_posts(
+                    client,
+                    cfg,
+                    blog,
+                    &mut snapshot,
+                    downloaded::PostSyncStatus::New,
+                    false,
+                    "No new accessible posts. Check the blog first.",
+                )
+                .await?;
             }
             3 => {
-                download_selected_post(client, cfg, blog, snapshot.as_ref(), false).await?;
+                download_snapshot_posts(
+                    client,
+                    cfg,
+                    blog,
+                    &mut snapshot,
+                    downloaded::PostSyncStatus::Updated,
+                    true,
+                    "No updated posts. Check the blog first.",
+                )
+                .await?;
             }
             4 => {
-                download_selected_post(client, cfg, blog, snapshot.as_ref(), true).await?;
+                download_snapshot_posts(
+                    client,
+                    cfg,
+                    blog,
+                    &mut snapshot,
+                    downloaded::PostSyncStatus::Partial,
+                    false,
+                    "No posts with missing content. Check the blog first.",
+                )
+                .await?;
             }
             5 => {
+                download_selected_post(client, cfg, blog, snapshot.as_ref(), false).await?;
+            }
+            6 => {
+                download_selected_post(client, cfg, blog, snapshot.as_ref(), true).await?;
+            }
+            7 => {
                 let Some(current) = snapshot.as_ref() else {
                     cli::info("Nothing to delete.");
                     continue;
@@ -448,7 +435,7 @@ async fn handle_downloaded_blog(client: &ApiClient, cfg: &AppConfig, blog: &str)
                     cli::info("Post deleted.");
                 }
             }
-            6 => {
+            8 => {
                 if cli::confirm_delete(&format!("blog '{blog}'")) {
                     downloaded::delete_blog(cfg, blog).await?;
                     cli::info("Blog deleted.");
@@ -458,6 +445,75 @@ async fn handle_downloaded_blog(client: &ApiClient, cfg: &AppConfig, blog: &str)
             _ => return Ok(()),
         }
     }
+}
+
+async fn download_snapshot_posts(
+    client: &ApiClient,
+    cfg: &AppConfig,
+    blog: &str,
+    snapshot: &mut Option<downloaded::BlogSnapshot>,
+    status: downloaded::PostSyncStatus,
+    force: bool,
+    empty_message: &str,
+) -> Result<()> {
+    let Some(current) = snapshot.as_ref() else {
+        cli::info("Check the blog first.");
+        return Ok(());
+    };
+    let ids: Vec<String> = current
+        .posts
+        .iter()
+        .filter(|post| post.status == status)
+        .map(|post| post.post_id.clone())
+        .collect();
+    if ids.is_empty() {
+        cli::info(empty_message);
+        return Ok(());
+    }
+    if force {
+        let prompt = if ids.len() == 1 {
+            "Redownload 1 updated post? Its files will be deleted.".to_string()
+        } else {
+            format!(
+                "Redownload {} updated posts? Their files will be deleted.",
+                ids.len()
+            )
+        };
+        if !cli::confirm(&prompt) {
+            return Ok(());
+        }
+    }
+    let Some(options) = cli::read_download_options() else {
+        return Ok(());
+    };
+    let Some(video_quality) = cli::read_video_quality() else {
+        return Ok(());
+    };
+    match downloaded::download_posts(
+        client,
+        cfg,
+        blog,
+        &ids,
+        downloaded::DownloadPostsParams {
+            download_options: options,
+            video_quality: video_quality.into(),
+            force,
+        },
+        &CancellationToken::new(),
+    )
+    .await
+    {
+        Ok(result) => {
+            cli::print_download_posts_result(&result);
+            if let Ok(updated) =
+                downloaded::refresh_blog(client, cfg, blog, &CancellationToken::new()).await
+            {
+                *snapshot = Some(updated);
+            }
+        }
+        Err(e) => log_error!("{:#}", e),
+    }
+    Ok(())
 }
 
 fn select_snapshot_post(snapshot: &downloaded::BlogSnapshot) -> Option<&downloaded::PostSnapshot> {
