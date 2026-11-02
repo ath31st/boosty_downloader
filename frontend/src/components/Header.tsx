@@ -1,7 +1,7 @@
 import { checkForUpdate } from '@/utils/checkForLatestVersion';
 import { getVersion } from '@tauri-apps/api/app';
 import { useEffect, useState } from 'react';
-import { HintIcon } from './HintIcon';
+import { UpdateButton } from './UpdateButton';
 import { isNewerVersion } from '@/utils/compareVersions';
 import type { Page } from '@/constants/pages';
 import { PageToggle } from './PageToggle';
@@ -40,23 +40,21 @@ export function Header({
 
   return (
     <header className="relative mb-4 flex shrink-0 items-center justify-center">
-      {currentVersion && (
-        <a
-          href="https://github.com/ath31st/boosty_downloader/releases"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="absolute left-4 text-(--meta-text) text-sm hover:underline"
-        >
-          v{currentVersion}
-        </a>
-      )}
-      {hasUpdate && (
-        <div className="absolute left-18">
-          <HintIcon
-            text={`Доступна новая версия приложения: ${latestVersion}`}
-          />
-        </div>
-      )}
+      <div className="absolute left-4 flex items-center gap-2">
+        {currentVersion && (
+          <a
+            href="https://github.com/ath31st/boosty_downloader/releases"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-(--meta-text) text-md hover:underline"
+          >
+            v{currentVersion}
+          </a>
+        )}
+        {hasUpdate && latestVersion && (
+          <UpdateButton latestVersion={latestVersion} />
+        )}
+      </div>
 
       <h1 className="flex-1 text-center font-bold text-2xl">
         Boosty Downloader
