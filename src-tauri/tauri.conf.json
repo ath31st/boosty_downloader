@@ -30,7 +30,9 @@
   },
   "bundle": {
     "active": true,
-    "targets": ["appimage"],
+    "targets": [
+      "appimage"
+    ],
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
@@ -38,5 +40,13 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ]
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDZGRjkxMThFQkI0RjkyNzEKUldSeGtrKzdqaEg1YitUMUpHZTliRTdubUh1YTFKOEpXQXZ6clNRZFEwTGMyNjcxdnRWWnRIeWsK",
+      "endpoints": [
+        "https://github.com/ath31st/boosty_downloader/releases/latest/download/latest.json"
+      ]
+    }
   }
 }
